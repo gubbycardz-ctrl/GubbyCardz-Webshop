@@ -145,6 +145,8 @@ austauschbar und testbar.
 ```
 src/app/            Next.js-Routen (nur Seiten/Layouts – keine Fachlogik)
 src/modules/<name>/ Fachliche Module (Katalog, Warenkorb, …) – werden angelegt, sobald gebraucht
+src/shared/         Querschnitt ohne Fachlogik (Firebase Admin, Geldformatierung)
+scripts/            Entwickler-Skripte (z. B. Beispieldaten für den Emulator)
 public/brand/       Web-optimierte Logos
 assets/             Original-Logos (Quelldateien, nicht direkt im Shop verwenden)
 firestore.rules     Firestore Security Rules (Standard: alles verboten)
@@ -154,8 +156,9 @@ apphosting.yaml     Firebase App Hosting (Instanz-Limits = Kostenschutz)
 
 | Befehl | Zweck |
 |---|---|
-| `npm run dev` | Entwicklungsserver (http://localhost:3000) |
+| `npm run dev` | Entwicklungsserver (http://localhost:3000) – liest/schreibt immer den Emulator (`.env.development`) |
 | `npm run emulators` | Firebase-Emulatoren lokal (Auth, Firestore, Storage; UI auf :4000) – braucht Java |
+| `npm run seed` | Beispieldaten (Spiele, Sets, Produkte, Angebote) in den laufenden Emulator schreiben |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript-Prüfung |
 | `npm test` | Unit-Tests (Vitest, Testdateien `*.test.ts` neben dem Code) |
@@ -169,6 +172,14 @@ Vor jedem Commit müssen `lint`, `typecheck`, `test` und `build` grün sein – 
 - `server.ts` – nur für Server-Code (`import "server-only"`), z. B. Firestore-Repository mit Admin SDK
 - Fachlogik hängt nur von der Repository-Schnittstelle ab (`CatalogRepository`), nie direkt von Firestore
 - Neue Firestore-Abfragen mit mehreren Feldern brauchen einen Eintrag in `firestore.indexes.json`
+
+**Seiten & Caching (Next.js 16, Cache Components):**
+- Datenbank-Lesezugriffe für Seiten laufen über gecachte Funktionen (`"use cache"` + `cacheLife` + `cacheTag`),
+  z. B. `src/modules/catalog/cached-queries.ts` – spart Firestore-Lesezugriffe (Kosten, Bot-Schutz).
+- `next build` greift **nie** auf die Datenbank zu: Datenteile stehen in `<Suspense>` und hängen an `params`
+  oder `await connection()`.
+- Nach Änderungen durch den Admin-Bereich wird per `cacheTag` (z. B. `CATALOG_CACHE_TAG`) neu validiert.
+- Unbekannte Slugs → `notFound()` (Next setzt `noindex`).
 `.firebaserc`: Standard ist das Demo-Projekt `demo-gubbycardz` (Emulatoren ohne Login), `prod` ist das echte Projekt.
 Live-Shop: https://gubbycardz-web--gubbycardz-80976.europe-west4.hosted.app – jeder Merge auf `main` wird automatisch ausgerollt.
 

@@ -9,6 +9,7 @@ export {
 export { gameSchema, cardSetSchema, slugSchema, type Game, type CardSet } from "./game";
 export { productSchema, type Product, type ProductKind } from "./product";
 export { offerSchema, isOfferTypeAllowedFor, type Offer, type OfferType } from "./offer";
+export { PRODUCT_KIND_LABELS, describeOffer } from "./labels";
 export {
   CARD_LANGUAGES,
   CARD_CONDITIONS,

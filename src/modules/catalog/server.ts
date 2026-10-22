@@ -2,3 +2,12 @@
 import "server-only";
 
 export { createFirestoreCatalogRepository } from "./firestore-catalog-repository";
+export {
+  CATALOG_CACHE_TAG,
+  getAvailableOffers,
+  getCardSet,
+  getGame,
+  getGames,
+  getProduct,
+  getProductsOfGame,
+} from "./cached-queries";

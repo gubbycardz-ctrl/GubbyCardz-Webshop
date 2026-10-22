@@ -15,6 +15,8 @@ export default defineConfig({
         test: {
           name: "integration",
           include: ["src/**/*.integration.test.ts"],
+          // No Google Cloud metadata server locally; skip the lookup.
+          env: { METADATA_SERVER_DETECTION: "none" },
         },
       },
     ],
