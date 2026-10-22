@@ -186,7 +186,8 @@ Nur eintragen, was **tatsächlich entschieden** ist.
 | Styling        | Tailwind CSS | Schnell, konsistent, kein eigenes CSS-Framework |
 | Backend        | Next.js Server Actions / Route Handlers + Firebase Admin SDK | Kein separates Backend nötig (KISS) |
 | Cloud Functions | Erst wenn nötig (Trigger, geplante Jobs) | YAGNI |
-| Datenbank      | Cloud Firestore, Region `europe-west3` (Frankfurt) | Ausgereift, Transaktionen gegen Überverkauf, DSGVO |
+| Datenbank      | Cloud Firestore, Multi-Region `eur3` (EU) | Ausgereift, Transaktionen gegen Überverkauf, Daten bleiben in der EU (DSGVO) |
+| Firebase-Projekt | `gubbycardz-80976` (Alias `prod`); Emulatoren immer gegen `demo-gubbycardz` | Lokale Entwicklung kann Produktion nie versehentlich berühren |
 | Auth           | Firebase Authentication | Fertige, sichere Lösung |
 | Dateien        | Cloud Storage for Firebase | Kartenscans & Produktbilder |
 | Hosting        | Firebase App Hosting (Blaze-Tarif) | Native Next.js-Unterstützung, Deploy per Git |
