@@ -15,6 +15,9 @@ npm run seed        # Terminal 2: einmalig Beispieldaten laden
 npm run dev         # Terminal 2: Shop (http://localhost:3000)
 ```
 
+Admin-Bereich lokal: http://localhost:3000/admin → „Mit Google anmelden“ → im Emulator-Fenster
+„Add new account“ mit der E-Mail `admin@example.com`.
+
 ## Prüfen
 
 ```bash

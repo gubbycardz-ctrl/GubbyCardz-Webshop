@@ -14,6 +14,8 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   poweredByHeader: false,
+  // Server Function arguments include login tokens – never print them in dev logs.
+  logging: { serverFunctions: false },
   turbopack: {
     rules: {
       "*.css": {
