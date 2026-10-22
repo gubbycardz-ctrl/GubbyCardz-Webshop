@@ -121,7 +121,9 @@ austauschbar und testbar.
 
 ### Kostenschutz
 - `maxInstances` in `apphosting.yaml` begrenzen – ein Bot-Angriff darf nicht beliebig hochskalieren.
-- Budget-Alarm im Google-Cloud-Projekt (z. B. bei 5 €). Achtung: Ein Alarm warnt nur, er stoppt nichts.
+- Budget-Alarm bei 5 €/Monat (E-Mail-Warnung, stoppt nichts).
+- Ausgabenobergrenze bei 10 €/Monat: Wird sie erreicht, pausiert Google die Dienste – **der Shop ist dann offline**.
+  Gewollt als Notbremse gegen Bot-Angriffe; bei echtem Umsatzwachstum rechtzeitig anheben.
 - Keine Abfragen ohne Limit (`limit()` bei jeder Liste), keine Endlos-Listener im Client.
 
 ---
@@ -159,7 +161,8 @@ apphosting.yaml     Firebase App Hosting (Instanz-Limits = Kostenschutz)
 | `npm run build` | Produktions-Build |
 
 Vor jedem Commit müssen `lint`, `typecheck` und `build` grün sein.
-`.firebaserc` zeigt auf das Demo-Projekt `demo-gubbycardz` – die Emulatoren laufen damit ohne Login und ohne echtes Projekt.
+`.firebaserc`: Standard ist das Demo-Projekt `demo-gubbycardz` (Emulatoren ohne Login), `prod` ist das echte Projekt.
+Live-Shop: https://gubbycardz-web--gubbycardz-80976.europe-west4.hosted.app – jeder Merge auf `main` wird automatisch ausgerollt.
 
 **Marke:** Name „GubbyCardz“. Farben als Tailwind-Klassen: `brand-red` (#FA000D), `brand-blue` (#0095FF), dazu Schwarz/Weiß.
 
@@ -190,7 +193,7 @@ Nur eintragen, was **tatsächlich entschieden** ist.
 | Firebase-Projekt | `gubbycardz-80976` (Alias `prod`); Emulatoren immer gegen `demo-gubbycardz` | Lokale Entwicklung kann Produktion nie versehentlich berühren |
 | Auth           | Firebase Authentication | Fertige, sichere Lösung |
 | Dateien        | Cloud Storage for Firebase | Kartenscans & Produktbilder |
-| Hosting        | Firebase App Hosting (Blaze-Tarif) | Native Next.js-Unterstützung, Deploy per Git |
+| Hosting        | Firebase App Hosting (Blaze-Tarif), Backend `gubbycardz-web` in `europe-west4` | Native Next.js-Unterstützung, Deploy per Git, nah an `eur3` |
 | Zahlung        | Stripe, hinter eigenem `PaymentProvider`-Adapter | Karte, PayPal, Klarna, SEPA; Anbieter austauschbar |
 | Validierung    | Zod | Ein Schema für Formulare, API und Typen |
 | Bot-Schutz     | App Check (reCAPTCHA Enterprise) + Security Rules + Honeypot | Siehe Abschnitt 4 |
