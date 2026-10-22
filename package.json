@@ -10,7 +10,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "emulators": "firebase emulators:start --project demo-gubbycardz",
     "test": "vitest run --project unit",
-    "test:integration": "firebase emulators:exec --only firestore --project demo-gubbycardz \"vitest run --project integration\""
+    "test:integration": "firebase emulators:exec --only firestore --project demo-gubbycardz \"vitest run --project integration\"",
+    "seed": "tsx scripts/seed-emulator.ts"
   },
   "dependencies": {
     "firebase-admin": "^14.5.0",
@@ -28,6 +29,7 @@
     "eslint-config-next": "16.4.2",
     "firebase-tools": "^15.34.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.0.5"
   }

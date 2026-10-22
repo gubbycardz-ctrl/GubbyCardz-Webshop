@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# Local development always targets the emulators; contains no secrets.
+!.env.development
 
 # vercel
 .vercel

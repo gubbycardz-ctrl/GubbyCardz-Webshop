@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Image from "next/image";
+import Link from "next/link";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -26,7 +28,21 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="de"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+      <body className="min-h-full flex flex-col font-sans">
+        <header className="border-b border-foreground/10">
+          <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-3">
+            <Link href="/" aria-label="GubbyCardz Startseite">
+              <Image src="/brand/logo-wordmark.png" alt="GubbyCardz" width={800} height={350} className="h-10 w-auto" priority />
+            </Link>
+            <nav className="text-sm font-medium">
+              <Link href="/spiele" className="hover:text-brand-blue">
+                Spiele
+              </Link>
+            </nav>
+          </div>
+        </header>
+        {children}
+      </body>
     </html>
   );
 }

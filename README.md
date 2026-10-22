@@ -11,6 +11,7 @@ Voraussetzungen: Node.js 20+, Java (für die Firebase-Emulatoren).
 ```bash
 npm install
 npm run emulators   # Terminal 1: Firebase-Emulatoren (UI: http://localhost:4000)
+npm run seed        # Terminal 2: einmalig Beispieldaten laden
 npm run dev         # Terminal 2: Shop (http://localhost:3000)
 ```
 
