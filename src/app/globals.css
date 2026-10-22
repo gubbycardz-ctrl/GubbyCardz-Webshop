@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+/* GubbyCardz brand colors, sampled from the logos in /assets. */
+:root {
+  --background: #ffffff;
+  --foreground: #111111;
+  --brand-red: #fa000d;
+  --brand-blue: #0095ff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand-red: var(--brand-red);
+  --color-brand-blue: var(--brand-blue);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}

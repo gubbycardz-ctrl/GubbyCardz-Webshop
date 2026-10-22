@@ -1,0 +1,9 @@
+# Firebase App Hosting configuration.
+# https://firebase.google.com/docs/app-hosting/configure
+runConfig:
+  # Scale to zero when idle (no cost without traffic).
+  minInstances: 0
+  # Hard cap so bot traffic cannot scale costs without limit.
+  maxInstances: 2
+  cpu: 1
+  memoryMiB: 512
