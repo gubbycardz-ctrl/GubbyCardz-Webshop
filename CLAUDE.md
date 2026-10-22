@@ -186,6 +186,11 @@ Vor jedem Commit müssen `lint`, `typecheck`, `test` und `build` grün sein – 
 - Session-Prüfungen stehen in `<Suspense>`; vor zeitabhängigen Prüfungen `await connection()`.
 - `client.ts` nur in Client Components (Google-Popup), `server.ts` nur auf dem Server.
 - Lokal: Im Emulator-Popup „Add new account“ mit `admin@example.com` anmelden.
+- Admin-Formulare: Server Actions in `src/app/admin/*-actions.ts` (dünn: `requireAdmin()` → `parse…Form()` aus dem
+  Modul → Repository → `updateTag()`). Die Umwandlung Formular → Entität (Euro → Cent, Slug, deutsche
+  Fehlermeldungen) liegt im Modul (`admin-forms.ts`) und ist unit-getestet.
+- Admin-Seiten lesen **ungecacht** (`getCatalogRepository()`), damit sie eigene Änderungen sofort sehen.
+- Gebundene Argumente von Server Actions (z. B. `productId`) kommen vom Browser → wie jede Eingabe prüfen.
 `.firebaserc`: Standard ist das Demo-Projekt `demo-gubbycardz` (Emulatoren ohne Login), `prod` ist das echte Projekt.
 Live-Shop: https://gubbycardz-web--gubbycardz-80976.europe-west4.hosted.app – jeder Merge auf `main` wird automatisch ausgerollt.
 

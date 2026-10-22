@@ -1,0 +1,79 @@
+"use server";
+
+import { updateTag } from "next/cache";
+import { redirect } from "next/navigation";
+import {
+  CatalogError,
+  parseCardSetForm,
+  parseGameForm,
+  parseOfferForm,
+  parseOfferUpdateForm,
+  parseProductForm,
+  type FormFields,
+  type FormResult,
+} from "@/modules/catalog";
+import { CATALOG_CACHE_TAG, getCatalogRepository } from "@/modules/catalog/server";
+import { requireAdmin } from "@/modules/auth/server";
+
+export type FormState = { error?: string; success?: string };
+
+export async function createGame(_: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+  return save(parseGameForm(fieldsOf(formData)), (game) => getCatalogRepository().saveGame(game), "Spiel gespeichert.");
+}
+
+export async function createCardSet(_: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+  return save(parseCardSetForm(fieldsOf(formData)), (set) => getCatalogRepository().saveCardSet(set), "Set gespeichert.");
+}
+
+export async function createProduct(_: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+  const parsed = parseProductForm(fieldsOf(formData), crypto.randomUUID());
+  const state = await save(parsed, (product) => getCatalogRepository().saveProduct(product), "");
+  // Straight to the new product, where its offers are added.
+  if (!state.error && parsed.ok) redirect(`/admin/produkte/${parsed.value.id}`);
+  return state;
+}
+
+export async function createOffer(productId: string, _: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+  if (!isId(productId)) return { error: "Produkt nicht gefunden." };
+  const parsed = parseOfferForm(fieldsOf(formData), { id: crypto.randomUUID(), productId });
+  return save(parsed, (offer) => getCatalogRepository().saveOffer(offer), "Angebot angelegt.");
+}
+
+export async function updateOffer(productId: string, offerId: string, _: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+  if (!isId(productId) || !isId(offerId)) return { error: "Angebot nicht gefunden." };
+  const repository = getCatalogRepository();
+  const offer = (await repository.listOffers(productId)).find((candidate) => candidate.id === offerId);
+  if (!offer) return { error: "Angebot nicht gefunden." };
+  return save(parseOfferUpdateForm(fieldsOf(formData), offer), (updated) => repository.saveOffer(updated), "Gespeichert.");
+}
+
+async function save<T>(parsed: FormResult<T>, write: (value: T) => Promise<void>, success: string): Promise<FormState> {
+  if (!parsed.ok) return { error: parsed.error };
+  try {
+    await write(parsed.value);
+  } catch (error) {
+    if (error instanceof CatalogError) return { error: error.message };
+    throw error;
+  }
+  // Shop pages show the change on the next request.
+  updateTag(CATALOG_CACHE_TAG);
+  return { success };
+}
+
+// Bound arguments arrive from the browser like any other input, so check them too.
+function isId(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 && value.length <= 128;
+}
+
+function fieldsOf(formData: FormData): FormFields {
+  const fields: FormFields = {};
+  for (const [key, value] of formData) {
+    if (typeof value === "string") fields[key] = value;
+  }
+  return fields;
+}

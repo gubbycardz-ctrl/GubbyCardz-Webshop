@@ -2,6 +2,7 @@
 import "server-only";
 
 export { createFirestoreCatalogRepository } from "./firestore-catalog-repository";
+export { getCatalogRepository } from "./default-repository";
 export {
   CATALOG_CACHE_TAG,
   getAvailableOffers,

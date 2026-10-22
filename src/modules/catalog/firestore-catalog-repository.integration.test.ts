@@ -108,6 +108,25 @@ describe("products", () => {
     expect(await repository.getProductBySlug(charizard.slug)).toMatchObject({ rarity: "Hyper Rare" });
   });
 
+  it("finds a product by id", async () => {
+    await repository.saveProduct(charizard);
+
+    expect(await repository.getProductById(charizard.id)).toEqual(charizard);
+    expect(await repository.getProductById("missing")).toBeNull();
+  });
+
+  it("lists products by kind across games, including those without game", async () => {
+    const sleeves: Product = { id: "p-sleeves", kind: "accessory", name: "Sleeves", slug: "sleeves" };
+    const playmat: Product = { id: "p-mat", kind: "accessory", name: "Playmat Pikachu", slug: "playmat-pikachu", gameId: "pokemon" };
+    await repository.saveProduct(sleeves);
+    await repository.saveProduct(playmat);
+    await repository.saveProduct(charizard);
+
+    const accessories = await repository.listProducts({ kind: "accessory" });
+
+    expect(accessories.map((product) => product.id)).toEqual(["p-mat", "p-sleeves"]);
+  });
+
   it("rejects invalid products before writing", async () => {
     await expect(repository.saveProduct({ ...charizard, slug: "Not A Slug" })).rejects.toThrow();
     expect(await repository.listProducts({ gameId: "pokemon" })).toEqual([]);

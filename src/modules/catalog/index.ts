@@ -11,6 +11,15 @@ export { productSchema, type Product, type ProductKind } from "./product";
 export { offerSchema, isOfferTypeAllowedFor, type Offer, type OfferType } from "./offer";
 export { PRODUCT_KIND_LABELS, describeOffer } from "./labels";
 export {
+  parseCardSetForm,
+  parseGameForm,
+  parseOfferForm,
+  parseOfferUpdateForm,
+  parseProductForm,
+  type FormFields,
+  type FormResult,
+} from "./admin-forms";
+export {
   CARD_LANGUAGES,
   CARD_CONDITIONS,
   DEFAULT_CARD_CONDITION,
