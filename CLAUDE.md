@@ -158,9 +158,10 @@ apphosting.yaml     Firebase App Hosting (Instanz-Limits = Kostenschutz)
 | `npm run emulators` | Firebase-Emulatoren lokal (Auth, Firestore, Storage; UI auf :4000) – braucht Java |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript-Prüfung |
+| `npm test` | Unit-Tests (Vitest, Testdateien `*.test.ts` neben dem Code) |
 | `npm run build` | Produktions-Build |
 
-Vor jedem Commit müssen `lint`, `typecheck` und `build` grün sein.
+Vor jedem Commit müssen `lint`, `typecheck`, `test` und `build` grün sein.
 `.firebaserc`: Standard ist das Demo-Projekt `demo-gubbycardz` (Emulatoren ohne Login), `prod` ist das echte Projekt.
 Live-Shop: https://gubbycardz-web--gubbycardz-80976.europe-west4.hosted.app – jeder Merge auf `main` wird automatisch ausgerollt.
 
@@ -199,3 +200,9 @@ Nur eintragen, was **tatsächlich entschieden** ist.
 | Bot-Schutz     | App Check (reCAPTCHA Enterprise) + Security Rules + Honeypot | Siehe Abschnitt 4 |
 | Tests          | Vitest, Firebase Emulator Suite, Playwright | Unit, Integration, E2E (Checkout) |
 | Suche          | Vorerst Firestore-Filter; Typesense/Algolia erst bei Bedarf | YAGNI |
+| Katalog-Modell | **Produkt** (was es gibt: Einzelkarte / Sealed / Zubehör) getrennt von **Angebot** (was wir verkaufen: Preis in Cent, Bestand, Sprache, Zustand oder Grading) | Eine Karte in mehreren Zuständen/Sprachen; Überverkauf-Schutz per Transaktion auf `stock` |
+| Sortiment      | Einzelkarten, gegradete Karten (PSA/BGS/CGC), Sealed, Zubehör | Antwort Shop-Betreiber |
+| Kartensprachen | Deutsch, Englisch, Japanisch, Chinesisch (vereinfacht) | Antwort Shop-Betreiber |
+| Kartenzustand  | Cardmarket-Skala (MT bis PO), Vorauswahl Near Mint | Bekannt bei deutschen Sammlern; Bestand ist überwiegend NM |
+| Seltenheit     | Freitext statt fester Liste | Seltenheiten unterscheiden sich je Spiel und ändern sich mit jeder Ära |
+| Produktpflege  | Admin-Bereich im Shop | Antwort Shop-Betreiber |
