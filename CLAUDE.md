@@ -159,9 +159,16 @@ apphosting.yaml     Firebase App Hosting (Instanz-Limits = Kostenschutz)
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript-Prüfung |
 | `npm test` | Unit-Tests (Vitest, Testdateien `*.test.ts` neben dem Code) |
+| `npm run test:integration` | Integrationstests (`*.integration.test.ts`) gegen den Firestore-Emulator – startet ihn selbst |
 | `npm run build` | Produktions-Build |
 
-Vor jedem Commit müssen `lint`, `typecheck`, `test` und `build` grün sein.
+Vor jedem Commit müssen `lint`, `typecheck`, `test` und `build` grün sein – bei Änderungen am Datenzugriff zusätzlich `test:integration`.
+
+**Modul-Aufbau** (Beispiel `src/modules/catalog/`):
+- `index.ts` – öffentliche Schnittstelle, auch für Client-Code sicher (Typen, Schemas, Konstanten)
+- `server.ts` – nur für Server-Code (`import "server-only"`), z. B. Firestore-Repository mit Admin SDK
+- Fachlogik hängt nur von der Repository-Schnittstelle ab (`CatalogRepository`), nie direkt von Firestore
+- Neue Firestore-Abfragen mit mehreren Feldern brauchen einen Eintrag in `firestore.indexes.json`
 `.firebaserc`: Standard ist das Demo-Projekt `demo-gubbycardz` (Emulatoren ohne Login), `prod` ist das echte Projekt.
 Live-Shop: https://gubbycardz-web--gubbycardz-80976.europe-west4.hosted.app – jeder Merge auf `main` wird automatisch ausgerollt.
 
