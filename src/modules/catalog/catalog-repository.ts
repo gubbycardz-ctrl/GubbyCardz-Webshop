@@ -1,6 +1,6 @@
 import type { CardSet, Game } from "./game";
 import type { Offer } from "./offer";
-import type { Product } from "./product";
+import type { Product, ProductKind } from "./product";
 
 export const DEFAULT_PAGE_SIZE = 50;
 export const MAX_PAGE_SIZE = 100;
@@ -16,7 +16,9 @@ export interface CatalogRepository {
   /** Fails if another product already uses the slug. */
   saveProduct(product: Product): Promise<void>;
   getProductBySlug(slug: string): Promise<Product | null>;
-  listProducts(query: { gameId: string; limit?: number }): Promise<Product[]>;
+  getProductById(id: string): Promise<Product | null>;
+  /** Filter by game or by kind (e.g. all accessories, with or without game), sorted by name. */
+  listProducts(query: { gameId?: string; kind?: ProductKind; limit?: number }): Promise<Product[]>;
 
   /** Fails if the product does not exist or does not accept this offer type. */
   saveOffer(offer: Offer): Promise<void>;

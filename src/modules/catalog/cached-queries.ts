@@ -1,16 +1,13 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
-import { getAdminFirestore } from "@/shared/firebase-admin";
-import { createFirestoreCatalogRepository } from "./firestore-catalog-repository";
+import { getCatalogRepository } from "./default-repository";
 
 // Read-side for the shop pages. Cached for minutes so repeated visits (and bots)
 // do not turn into Firestore reads. Stock shown here may lag slightly; checkout
 // re-checks stock in a transaction.
 export const CATALOG_CACHE_TAG = "catalog";
 
-function repository() {
-  return createFirestoreCatalogRepository(getAdminFirestore());
-}
+const repository = getCatalogRepository;
 
 export async function getGames() {
   "use cache";

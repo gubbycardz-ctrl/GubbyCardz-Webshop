@@ -1,4 +1,4 @@
-import type { DocumentData, Firestore } from "firebase-admin/firestore";
+import type { DocumentData, Firestore, Query } from "firebase-admin/firestore";
 import {
   CatalogError,
   DEFAULT_PAGE_SIZE,
@@ -58,7 +58,7 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
           products.where("slug", "==", valid.slug).limit(2),
         );
         if (sameSlug.docs.some((doc) => doc.id !== valid.id)) {
-          throw new CatalogError(`Slug "${valid.slug}" ist bereits vergeben`);
+          throw new CatalogError(`Es gibt schon ein Produkt unter /produkte/${valid.slug}`);
         }
         transaction.set(products.doc(valid.id), toDocument(valid));
       });
@@ -70,9 +70,16 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
       return doc ? productSchema.parse(doc.data()) : null;
     },
 
-    async listProducts({ gameId, limit = DEFAULT_PAGE_SIZE }) {
-      const snapshot = await products
-        .where("gameId", "==", gameId)
+    async getProductById(id) {
+      const doc = await products.doc(id).get();
+      return doc.exists ? productSchema.parse(doc.data()) : null;
+    },
+
+    async listProducts({ gameId, kind, limit = DEFAULT_PAGE_SIZE }) {
+      let query: Query = products;
+      if (gameId) query = query.where("gameId", "==", gameId);
+      if (kind) query = query.where("kind", "==", kind);
+      const snapshot = await query
         .orderBy("name")
         .limit(Math.min(limit, MAX_PAGE_SIZE))
         .get();
