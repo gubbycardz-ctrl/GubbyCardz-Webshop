@@ -1,4 +1,4 @@
-import type { DocumentData, Firestore, Query } from "firebase-admin/firestore";
+import type { CollectionReference, DocumentData, Firestore, Query } from "firebase-admin/firestore";
 import {
   CatalogError,
   DEFAULT_PAGE_SIZE,
@@ -112,7 +112,25 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
         .map((doc) => offerSchema.parse(doc.data()))
         .sort((a, b) => a.priceCents - b.priceCents);
     },
+
+    async getOffersByIds(ids) {
+      const docs = await getAllByIds(offers, ids);
+      return docs.map((data) => offerSchema.parse(data));
+    },
+
+    async getProductsByIds(ids) {
+      const docs = await getAllByIds(products, ids);
+      return docs.map((data) => productSchema.parse(data));
+    },
   };
+
+  async function getAllByIds(collection: CollectionReference, ids: readonly string[]) {
+    const uniqueIds = [...new Set(ids)];
+    if (uniqueIds.length === 0) return [];
+    if (uniqueIds.length > MAX_PAGE_SIZE) throw new CatalogError(`Höchstens ${MAX_PAGE_SIZE} Einträge auf einmal`);
+    const snapshots = await db.getAll(...uniqueIds.map((id) => collection.doc(id)));
+    return snapshots.filter((snapshot) => snapshot.exists).map((snapshot) => snapshot.data());
+  }
 }
 
 // Firestore rejects `undefined` values; optional fields are simply left out.

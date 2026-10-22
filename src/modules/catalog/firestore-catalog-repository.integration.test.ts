@@ -160,6 +160,22 @@ describe("offers", () => {
     expect(offers.map((offer) => offer.id)).toEqual(["o-lp", "o-nm"]);
   });
 
+  it("loads offers and products by id, skipping unknown and duplicate ids", async () => {
+    await repository.saveOffer(nearMintOffer);
+
+    const offers = await repository.getOffersByIds([nearMintOffer.id, "missing", nearMintOffer.id]);
+    const products = await repository.getProductsByIds([charizard.id, display.id, "missing"]);
+
+    expect(offers).toEqual([nearMintOffer]);
+    expect(products.map((product) => product.id).sort()).toEqual([charizard.id, display.id].sort());
+    expect(await repository.getOffersByIds([])).toEqual([]);
+  });
+
+  it("refuses unbounded id lookups", async () => {
+    const tooMany = Array.from({ length: 101 }, (_, index) => `o${index}`);
+    await expect(repository.getOffersByIds(tooMany)).rejects.toThrow(CatalogError);
+  });
+
   it("rejects offers for unknown products", async () => {
     await expect(repository.saveOffer({ ...nearMintOffer, productId: "missing" })).rejects.toThrow(CatalogError);
   });

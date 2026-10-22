@@ -24,6 +24,11 @@ export interface CatalogRepository {
   saveOffer(offer: Offer): Promise<void>;
   /** Sorted by price, cheapest first. */
   listOffers(productId: string): Promise<Offer[]>;
+
+  /** Missing ids are left out. At most MAX_PAGE_SIZE ids per call. */
+  getOffersByIds(ids: readonly string[]): Promise<Offer[]>;
+  /** Missing ids are left out. At most MAX_PAGE_SIZE ids per call. */
+  getProductsByIds(ids: readonly string[]): Promise<Product[]>;
 }
 
 export class CatalogError extends Error {

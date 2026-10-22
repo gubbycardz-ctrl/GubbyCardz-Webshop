@@ -180,6 +180,8 @@ Vor jedem Commit müssen `lint`, `typecheck`, `test` und `build` grün sein – 
   oder `await connection()`.
 - Nach Änderungen durch den Admin-Bereich wird per `cacheTag` (z. B. `CATALOG_CACHE_TAG`) neu validiert.
 - Unbekannte Slugs → `notFound()` (Next setzt `noindex`).
+- **Ungecachte** Datenbank-/Auth-Zugriffe beim Rendern (Warenkorb, Admin, Session) brauchen vorher
+  `await connection()` – sonst meldet Next.js im Dev-Modus „unstable value … while prerendering“.
 
 **Admin-Bereich & Auth (`src/modules/auth/`):**
 - Jede Admin-Seite **und jede Admin-Server-Action** ruft zuerst `requireAdmin()` auf – UI-Ausblenden allein schützt nichts.
@@ -236,4 +238,5 @@ Nur eintragen, was **tatsächlich entschieden** ist.
 | Seltenheit     | Freitext statt fester Liste | Seltenheiten unterscheiden sich je Spiel und ändern sich mit jeder Ära |
 | Produktpflege  | Admin-Bereich im Shop | Antwort Shop-Betreiber |
 | Admin-Login    | Google-Anmeldung (Firebase Auth) → httpOnly-Session-Cookie `__session` (5 Tage); Admins = verifizierte E-Mails aus `ADMIN_EMAILS` | Keine eigenen Passwörter; Abmelden widerruft alle Sessions; Rechte werden bei jeder Anfrage neu geprüft |
+| Warenkorb      | httpOnly-Cookie `cart` (nur Angebots-IDs + Mengen, max. 50 Positionen, 30 Tage); Preise/Bestand immer frisch vom Server | Keine DB-Schreibzugriffe für Besucher/Bots; manipulierte Cookies können keine Preise ändern; technisch notwendig → kein Cookie-Banner nötig |
 | Admin-Liste    | Produktion: Secret `adminEmails` im Secret Manager (nicht im öffentlichen Repo); lokal: `admin@example.com` | Ändern: `npx firebase apphosting:secrets:set adminEmails --project prod` |

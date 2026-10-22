@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { PRODUCT_KIND_LABELS, describeOffer, type Product } from "@/modules/catalog";
 import { getAvailableOffers, getCardSet, getGame, getProduct } from "@/modules/catalog/server";
 import { formatEuro } from "@/shared/money";
+import { AddToCartButton } from "./add-to-cart-button";
 
 export async function generateMetadata({ params }: PageProps<"/produkte/[slug]">): Promise<Metadata> {
   const { slug } = await params;
@@ -68,12 +69,15 @@ async function ProductDetails({ params }: Pick<PageProps<"/produkte/[slug]">, "p
       ) : (
         <ul className="mt-3 divide-y divide-foreground/10 rounded-xl border border-foreground/10">
           {offers.map((offer) => (
-            <li key={offer.id} className="flex items-center justify-between gap-4 px-4 py-3">
-              <span>
+            <li key={offer.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3">
+              <span className="min-w-48 flex-1">
                 {describeOffer(offer)}
                 <span className="block text-sm text-foreground/60">{offer.stock} auf Lager</span>
               </span>
-              <span className="shrink-0 text-lg font-semibold">{formatEuro(offer.priceCents)}</span>
+              <span className="ml-auto flex shrink-0 items-center gap-4">
+                <span className="text-lg font-semibold">{formatEuro(offer.priceCents)}</span>
+                <AddToCartButton offerId={offer.id} />
+              </span>
             </li>
           ))}
         </ul>
