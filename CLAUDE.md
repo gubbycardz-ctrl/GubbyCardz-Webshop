@@ -180,6 +180,12 @@ Vor jedem Commit müssen `lint`, `typecheck`, `test` und `build` grün sein – 
   oder `await connection()`.
 - Nach Änderungen durch den Admin-Bereich wird per `cacheTag` (z. B. `CATALOG_CACHE_TAG`) neu validiert.
 - Unbekannte Slugs → `notFound()` (Next setzt `noindex`).
+
+**Admin-Bereich & Auth (`src/modules/auth/`):**
+- Jede Admin-Seite **und jede Admin-Server-Action** ruft zuerst `requireAdmin()` auf – UI-Ausblenden allein schützt nichts.
+- Session-Prüfungen stehen in `<Suspense>`; vor zeitabhängigen Prüfungen `await connection()`.
+- `client.ts` nur in Client Components (Google-Popup), `server.ts` nur auf dem Server.
+- Lokal: Im Emulator-Popup „Add new account“ mit `admin@example.com` anmelden.
 `.firebaserc`: Standard ist das Demo-Projekt `demo-gubbycardz` (Emulatoren ohne Login), `prod` ist das echte Projekt.
 Live-Shop: https://gubbycardz-web--gubbycardz-80976.europe-west4.hosted.app – jeder Merge auf `main` wird automatisch ausgerollt.
 
@@ -224,3 +230,5 @@ Nur eintragen, was **tatsächlich entschieden** ist.
 | Kartenzustand  | Cardmarket-Skala (MT bis PO), Vorauswahl Near Mint | Bekannt bei deutschen Sammlern; Bestand ist überwiegend NM |
 | Seltenheit     | Freitext statt fester Liste | Seltenheiten unterscheiden sich je Spiel und ändern sich mit jeder Ära |
 | Produktpflege  | Admin-Bereich im Shop | Antwort Shop-Betreiber |
+| Admin-Login    | Google-Anmeldung (Firebase Auth) → httpOnly-Session-Cookie `__session` (5 Tage); Admins = verifizierte E-Mails aus `ADMIN_EMAILS` | Keine eigenen Passwörter; Abmelden widerruft alle Sessions; Rechte werden bei jeder Anfrage neu geprüft |
+| Admin-Liste    | Produktion: Secret `adminEmails` im Secret Manager (nicht im öffentlichen Repo); lokal: `admin@example.com` | Ändern: `npx firebase apphosting:secrets:set adminEmails --project prod` |
