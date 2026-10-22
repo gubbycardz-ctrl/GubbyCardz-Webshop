@@ -1,0 +1,11 @@
+rules_version = '2';
+
+// Deny all client access. Uploads happen server-side only.
+// Public read for product images will be opened deliberately once the catalog needs it.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
