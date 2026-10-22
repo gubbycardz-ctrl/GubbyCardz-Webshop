@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "emulators": "firebase emulators:start"
+    "emulators": "firebase emulators:start --project demo-gubbycardz"
   },
   "dependencies": {
     "next": "16.4.2",

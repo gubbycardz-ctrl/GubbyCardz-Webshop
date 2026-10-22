@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "demo-gubbycardz"
+    "default": "demo-gubbycardz",
+    "prod": "gubbycardz-80976"
   }
 }
