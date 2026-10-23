@@ -17,6 +17,11 @@ export default function ThankYouPage({ searchParams }: PageProps<"/kasse/danke">
       <Suspense>
         <OrderNumber searchParams={searchParams} />
       </Suspense>
+      {/* Shown right after the payment page; the confirmation itself arrives separately from the provider. */}
+      <p className="mt-4 text-foreground/80">
+        Sobald deine Zahlung bestätigt ist, packen wir deine Bestellung und verschicken sie versichert. Bei Zahlung per
+        Lastschrift kann die Bestätigung einige Tage dauern.
+      </p>
       <Link href="/spiele" className="mt-6 inline-block font-medium text-brand-blue hover:underline">
         Weiter stöbern
       </Link>

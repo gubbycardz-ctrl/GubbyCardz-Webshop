@@ -30,3 +30,13 @@ env:
   - variable: ADMIN_EMAILS
     secret: adminEmails
     availability: [ RUNTIME ]
+  # Stripe keys from Cloud Secret Manager – never in this public repo. RUNTIME only, so they never
+  # end up in build output. A test key (sk_test_…) lets only admins order (see orders/ordering-access.ts).
+  # Rotate: new version in Secret Manager, then a new rollout.
+  - variable: STRIPE_SECRET_KEY
+    secret: stripeSecretKey
+    availability: [ RUNTIME ]
+  # Signing secret of the webhook endpoint /api/payment/webhook (Stripe dashboard → Developers → Webhooks).
+  - variable: STRIPE_WEBHOOK_SECRET
+    secret: stripeWebhookSecret
+    availability: [ RUNTIME ]

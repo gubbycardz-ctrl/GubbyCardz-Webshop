@@ -5,6 +5,7 @@ export {
   ADMIN_LOGIN_PATH,
   endSession,
   getSessionUser,
+  isAdminSession,
   requireAdmin,
   startAdminSession,
   type StartSessionResult,

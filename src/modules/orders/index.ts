@@ -12,4 +12,6 @@ export {
 export { checkoutFields, parseCheckoutForm, type CheckoutCustomer } from "./checkout-form";
 export { buildOrder, maxOrderValueMessage, type BuildOrderResult } from "./build-order";
 export { packingList, type PackingListLine } from "./packing-list";
+export { CHECKOUT_TIMEOUT_MINUTES, checkoutRequestFor } from "./payment-request";
+export { abandonCheckout, applyPaymentEvent, type PaymentEventOutcome } from "./payment-events";
 export { ORDER_LIST_LIMIT, OrderError, type OrderRepository } from "./order-repository";
