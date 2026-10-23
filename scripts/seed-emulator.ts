@@ -32,16 +32,16 @@ async function seed() {
   await catalog.saveProduct({ id: "op05-display", kind: "sealed", category: "display", name: "Display OP-05", slug: "display-op-05", gameId: "one-piece", setId: "op05", createdAt: daysAgo(0) });
   await catalog.saveProduct({ id: "sleeves-black", kind: "accessory", name: "Sleeves schwarz (100 Stück)", slug: "sleeves-schwarz-100", createdAt: daysAgo(2) });
 
-  await catalog.saveOffer({ id: "glurak-de-nm", productId: "glurak-ex-199", type: "raw-card", language: "de", condition: "near-mint", priceCents: 11999, stock: 2 }, { sku: "PKM-MEW-199-DE-NM", purchasePriceCents: 9000, storageLocation: "Ordner 1 / Seite 3" });
-  await catalog.saveOffer({ id: "glurak-en-lp", productId: "glurak-ex-199", type: "raw-card", language: "en", condition: "light-played", priceCents: 8499, stock: 1 });
-  await catalog.saveOffer({ id: "glurak-psa10", productId: "glurak-ex-199", type: "graded-card", language: "en", gradingCompany: "psa", grade: 10, certNumber: "81234567", priceCents: 39900, stock: 1 });
-  await catalog.saveOffer({ id: "bisasam-sold-out", productId: "bisasam-166", type: "raw-card", language: "de", condition: "near-mint", priceCents: 2499, stock: 0 });
-  await catalog.saveOffer({ id: "mew-bundle-de", productId: "mew-151-display", type: "sealed", language: "de", priceCents: 3499, stock: 5 }, { sku: "PKM-MEW-BB-DE", purchasePriceCents: 2450, storageLocation: "Regal A2" });
-  await catalog.saveOffer({ id: "mew-etb-en", productId: "mew-151-etb", type: "sealed", language: "en", priceCents: 8999, stock: 2 }, { sku: "PKM-MEW-ETB-EN", purchasePriceCents: 6200, storageLocation: "Regal A1" });
-  await catalog.saveOffer({ id: "luffy-ja", productId: "luffy-op05-119", type: "raw-card", language: "ja", condition: "near-mint", priceCents: 15999, stock: 1 });
-  await catalog.saveOffer({ id: "luffy-zh", productId: "luffy-op05-119", type: "raw-card", language: "zh-Hans", condition: "excellent", priceCents: 6999, stock: 1 });
-  await catalog.saveOffer({ id: "op05-display-ja", productId: "op05-display", type: "sealed", language: "ja", priceCents: 12999, stock: 3 }, { sku: "OP-OP05-DSP-JA", purchasePriceCents: 9500, storageLocation: "Regal B1" });
-  await catalog.saveOffer({ id: "sleeves-black", productId: "sleeves-black", type: "accessory", priceCents: 899, stock: 20 });
+  await catalog.saveOffer({ id: "glurak-de-nm", productId: "glurak-ex-199", type: "raw-card", language: "de", condition: "near-mint", priceCents: 11999, stock: 2, taxScheme: "margin" }, { sku: "PKM-MEW-199-DE-NM", purchasePriceCents: 9000, origin: "private", storageLocation: "Ordner 1 / Seite 3" });
+  await catalog.saveOffer({ id: "glurak-en-lp", productId: "glurak-ex-199", type: "raw-card", language: "en", condition: "light-played", priceCents: 8499, stock: 1, taxScheme: "margin" });
+  await catalog.saveOffer({ id: "glurak-psa10", productId: "glurak-ex-199", type: "graded-card", language: "en", gradingCompany: "psa", grade: 10, certNumber: "81234567", priceCents: 39900, stock: 1, taxScheme: "margin" });
+  await catalog.saveOffer({ id: "bisasam-sold-out", productId: "bisasam-166", type: "raw-card", language: "de", condition: "near-mint", priceCents: 2499, stock: 0, taxScheme: "margin" });
+  await catalog.saveOffer({ id: "mew-bundle-de", productId: "mew-151-display", type: "sealed", language: "de", priceCents: 3499, stock: 5, taxScheme: "standard" }, { sku: "PKM-MEW-BB-DE", purchasePriceCents: 2450, origin: "commercial", storageLocation: "Regal A2" });
+  await catalog.saveOffer({ id: "mew-etb-en", productId: "mew-151-etb", type: "sealed", language: "en", priceCents: 8999, stock: 2, taxScheme: "standard" }, { sku: "PKM-MEW-ETB-EN", purchasePriceCents: 6200, origin: "commercial", storageLocation: "Regal A1" });
+  await catalog.saveOffer({ id: "luffy-ja", productId: "luffy-op05-119", type: "raw-card", language: "ja", condition: "near-mint", priceCents: 15999, stock: 1, taxScheme: "margin" });
+  await catalog.saveOffer({ id: "luffy-zh", productId: "luffy-op05-119", type: "raw-card", language: "zh-Hans", condition: "excellent", priceCents: 6999, stock: 1, taxScheme: "margin" });
+  await catalog.saveOffer({ id: "op05-display-ja", productId: "op05-display", type: "sealed", language: "ja", priceCents: 12999, stock: 3, taxScheme: "standard" }, { sku: "OP-OP05-DSP-JA", purchasePriceCents: 9500, origin: "commercial", storageLocation: "Regal B1" });
+  await catalog.saveOffer({ id: "sleeves-black", productId: "sleeves-black", type: "accessory", priceCents: 899, stock: 20, taxScheme: "standard" });
 
   console.log("Emulator mit Beispieldaten befüllt.");
 }

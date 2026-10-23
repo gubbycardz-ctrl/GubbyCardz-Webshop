@@ -8,11 +8,13 @@ import {
   GRADING_COMPANIES,
   MAX_SKU_LENGTH,
   MAX_STORAGE_LOCATION_LENGTH,
+  PURCHASE_ORIGINS,
   describeOffer,
   type Offer,
   type OfferInternals,
   type ProductKind,
 } from "@/modules/catalog";
+import { TAX_SCHEMES } from "@/modules/pricing";
 import { centsToEuroInput, formatEuro } from "@/shared/money";
 import { createOffer, deleteOffer, updateOffer } from "../catalog-actions";
 import { DeleteButton } from "./delete-button";
@@ -72,6 +74,7 @@ export function OfferForm({ productId, productKind }: { productId: string; produ
       <Field label="Bestand">
         <input name="stock" required type="number" min={0} step={1} defaultValue={1} className={inputClass} />
       </Field>
+      <TaxSchemeField />
       <InternalsFields />
       <div className="flex flex-wrap items-center gap-3 sm:col-span-3">
         <SubmitButton pending={pending}>Angebot anlegen</SubmitButton>
@@ -95,6 +98,7 @@ export function OfferRow({ offer, internals = {} }: { offer: Offer; internals?: 
           aktuell {formatEuro(offer.priceCents)} · {offer.stock} auf Lager
         </span>
       </div>
+      <TaxSchemeField defaultValue={offer.taxScheme} />
       <InternalsFields internals={internals} compact />
       <Field label="Preis in €">
         <input name="price" required inputMode="decimal" defaultValue={centsToEuroInput(offer.priceCents)} className={`${inputClass} w-28`} />
@@ -123,11 +127,15 @@ function InternalsFields({ internals = {}, compact = false }: { internals?: Offe
       <Field label="EK in € (intern)">
         <input
           name="purchasePrice"
+          required
           inputMode="decimal"
           defaultValue={internals.purchasePriceCents === undefined ? undefined : centsToEuroInput(internals.purchasePriceCents)}
           placeholder="z. B. 24,50"
           className={`${inputClass} ${compact ? "w-28" : ""}`}
         />
+      </Field>
+      <Field label="Herkunft (intern)">
+        <Options name="origin" options={PURCHASE_ORIGINS} defaultValue={internals.origin} placeholder="– wählen –" required />
       </Field>
       <Field label="Lagerplatz (intern)">
         <input name="storageLocation" maxLength={MAX_STORAGE_LOCATION_LENGTH} defaultValue={internals.storageLocation} placeholder="z. B. Regal A3" className={`${inputClass} ${width}`} />
@@ -136,9 +144,36 @@ function InternalsFields({ internals = {}, compact = false }: { internals?: Offe
   );
 }
 
-function Options({ name, options, defaultValue }: { name: string; options: Record<string, string>; defaultValue?: string }) {
+/** Shown to nobody yet: it only matters once the shop leaves the small-business scheme (§ 19 UStG). */
+function TaxSchemeField({ defaultValue }: { defaultValue?: string }) {
   return (
-    <select name={name} defaultValue={defaultValue} className={inputClass}>
+    <Field label="Steuerart">
+      <Options name="taxScheme" options={TAX_SCHEMES} defaultValue={defaultValue} placeholder="– wählen –" required />
+    </Field>
+  );
+}
+
+/** Without a default value, a placeholder makes the choice deliberate – and shows legacy offers that lack one. */
+function Options({
+  name,
+  options,
+  defaultValue,
+  placeholder,
+  required = false,
+}: {
+  name: string;
+  options: Record<string, string>;
+  defaultValue?: string;
+  placeholder?: string;
+  required?: boolean;
+}) {
+  return (
+    <select name={name} defaultValue={defaultValue ?? (placeholder === undefined ? undefined : "")} required={required} className={inputClass}>
+      {placeholder !== undefined && (
+        <option value="" disabled>
+          {placeholder}
+        </option>
+      )}
       {Object.entries(options).map(([value, label]) => (
         <option key={value} value={value}>
           {label}

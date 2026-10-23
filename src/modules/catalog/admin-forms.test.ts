@@ -130,52 +130,82 @@ describe("parseOfferForm", () => {
 
   it("parses German prices and grades", () => {
     const result = parseOfferForm(
-      { type: "graded-card", language: "ja", gradingCompany: "bgs", grade: "9,5", certNumber: "123", price: "1.250,00", stock: "1" },
+      { type: "graded-card", language: "ja", gradingCompany: "bgs", grade: "9,5", certNumber: "123", price: "1.250,00", stock: "1", taxScheme: "margin" },
       ids,
     );
     expect(result).toEqual({
       ok: true,
-      value: { ...ids, type: "graded-card", language: "ja", gradingCompany: "bgs", grade: 9.5, certNumber: "123", priceCents: 125000, stock: 1 },
+      value: { ...ids, type: "graded-card", language: "ja", gradingCompany: "bgs", grade: 9.5, certNumber: "123", priceCents: 125000, stock: 1, taxScheme: "margin" },
     });
   });
 
   it("rejects prices that are not clear euro amounts", () => {
-    const result = parseOfferForm({ type: "accessory", price: "39,999", stock: "1" }, ids);
+    const result = parseOfferForm({ type: "accessory", price: "39,999", stock: "1", taxScheme: "standard" }, ids);
     expect(result).toEqual({ ok: false, error: "Preis: bitte als Euro-Betrag eingeben, z. B. 39,99" });
   });
 
   it("rejects fractional or missing stock", () => {
-    expect(parseOfferForm({ type: "accessory", price: "8,99", stock: "1,5" }, ids).ok).toBe(false);
-    expect(parseOfferForm({ type: "accessory", price: "8,99", stock: "" }, ids).ok).toBe(false);
+    expect(parseOfferForm({ type: "accessory", price: "8,99", stock: "1,5", taxScheme: "standard" }, ids).ok).toBe(false);
+    expect(parseOfferForm({ type: "accessory", price: "8,99", stock: "", taxScheme: "standard" }, ids).ok).toBe(false);
+  });
+
+  it("requires a known tax scheme", () => {
+    expect(parseOfferForm({ type: "accessory", price: "8,99", stock: "1", taxScheme: "" }, ids)).toEqual({
+      ok: false,
+      error: "Steuerart: bitte ausfüllen",
+    });
+    expect(parseOfferForm({ type: "accessory", price: "8,99", stock: "1", taxScheme: "zero" }, ids).ok).toBe(false);
   });
 });
 
 describe("parseOfferUpdateForm", () => {
-  const offer: Offer = { id: "o1", productId: "p1", type: "raw-card", language: "de", condition: "near-mint", priceCents: 3999, stock: 2 };
+  const offer: Offer = { id: "o1", productId: "p1", type: "raw-card", language: "de", condition: "near-mint", priceCents: 3999, stock: 2, taxScheme: "margin" };
 
-  it("changes only price and stock", () => {
-    expect(parseOfferUpdateForm({ price: "34,50", stock: "0", condition: "poor" }, offer)).toEqual({
+  it("changes only price, stock and tax scheme", () => {
+    expect(parseOfferUpdateForm({ price: "34,50", stock: "0", condition: "poor", taxScheme: "standard" }, offer)).toEqual({
       ok: true,
-      value: { ...offer, priceCents: 3450, stock: 0 },
+      value: { ...offer, priceCents: 3450, stock: 0, taxScheme: "standard" },
     });
+  });
+
+  it("asks for the tax scheme when editing an offer created before it existed", () => {
+    const legacyOffer: Offer = { ...offer, taxScheme: undefined };
+    expect(parseOfferUpdateForm({ price: "34,50", stock: "2" }, legacyOffer)).toEqual({ ok: false, error: "Steuerart: bitte ausfüllen" });
   });
 });
 
 describe("parseOfferInternalsForm", () => {
-  it("parses SKU in upper case, EK in cents and the storage location", () => {
-    expect(parseOfferInternalsForm({ sku: " pkm-mew-199-de ", purchasePrice: "1.024,50", storageLocation: " Regal A3 " })).toEqual({
+  it("parses SKU in upper case, EK in cents, origin and the storage location", () => {
+    expect(
+      parseOfferInternalsForm({ sku: " pkm-mew-199-de ", purchasePrice: "1.024,50", origin: "private", storageLocation: " Regal A3 " }),
+    ).toEqual({
       ok: true,
-      value: { sku: "PKM-MEW-199-DE", purchasePriceCents: 102450, storageLocation: "Regal A3" },
+      value: { sku: "PKM-MEW-199-DE", purchasePriceCents: 102450, origin: "private", storageLocation: "Regal A3" },
     });
   });
 
-  it("treats empty fields as not set and allows an EK of zero", () => {
-    expect(parseOfferInternalsForm({ sku: "", purchasePrice: " ", storageLocation: "" })).toEqual({ ok: true, value: {} });
-    expect(parseOfferInternalsForm({ purchasePrice: "0" })).toEqual({ ok: true, value: { purchasePriceCents: 0 } });
+  it("treats empty SKU and storage location as not set and allows an EK of zero", () => {
+    expect(parseOfferInternalsForm({ sku: "", purchasePrice: "0", origin: "commercial", storageLocation: "" })).toEqual({
+      ok: true,
+      value: { purchasePriceCents: 0, origin: "commercial" },
+    });
+  });
+
+  it("requires EK and origin, because the margin scheme needs them per item", () => {
+    expect(parseOfferInternalsForm({ purchasePrice: " ", origin: "" })).toEqual({
+      ok: false,
+      error: "EK: bitte ausfüllen · Herkunft: bitte ausfüllen",
+    });
   });
 
   it("rejects unclear EK amounts and SKUs with spaces", () => {
-    expect(parseOfferInternalsForm({ purchasePrice: "24,555" })).toEqual({ ok: false, error: "EK: bitte als Euro-Betrag eingeben, z. B. 24,50" });
-    expect(parseOfferInternalsForm({ sku: "PKM 199" })).toEqual({ ok: false, error: "SKU: Nur Großbuchstaben, Ziffern und . _ / -" });
+    expect(parseOfferInternalsForm({ purchasePrice: "24,555", origin: "private" })).toEqual({
+      ok: false,
+      error: "EK: bitte als Euro-Betrag eingeben, z. B. 24,50",
+    });
+    expect(parseOfferInternalsForm({ sku: "PKM 199", purchasePrice: "1", origin: "private" })).toEqual({
+      ok: false,
+      error: "SKU: Nur Großbuchstaben, Ziffern und . _ / -",
+    });
   });
 });
