@@ -1,6 +1,6 @@
 "use server";
 
-import { updateTag } from "next/cache";
+import { refresh, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   CatalogError,
@@ -60,9 +60,54 @@ async function save<T>(parsed: FormResult<T>, write: (value: T) => Promise<void>
     if (error instanceof CatalogError) return { error: error.message };
     throw error;
   }
-  // Shop pages show the change on the next request.
-  updateTag(CATALOG_CACHE_TAG);
+  afterCatalogChange();
   return { success };
+}
+
+export async function deleteGame(gameId: unknown): Promise<FormState> {
+  await requireAdmin();
+  if (!isId(gameId)) return { error: "Spiel nicht gefunden." };
+  return remove(() => getCatalogRepository().deleteGame(gameId));
+}
+
+export async function deleteCardSet(setId: unknown): Promise<FormState> {
+  await requireAdmin();
+  if (!isId(setId)) return { error: "Set nicht gefunden." };
+  return remove(() => getCatalogRepository().deleteCardSet(setId));
+}
+
+export async function deleteProduct(productId: unknown): Promise<FormState> {
+  await requireAdmin();
+  if (!isId(productId)) return { error: "Produkt nicht gefunden." };
+  const repository = getCatalogRepository();
+  const product = await repository.getProductById(productId);
+  const state = await remove(() => repository.deleteProduct(productId));
+  // The product page no longer exists, so go back to the list it came from.
+  if (!state.error) redirect(`/admin/produkte?filter=${product?.gameId ?? "zubehoer"}`);
+  return state;
+}
+
+export async function deleteOffer(offerId: unknown): Promise<FormState> {
+  await requireAdmin();
+  if (!isId(offerId)) return { error: "Angebot nicht gefunden." };
+  return remove(() => getCatalogRepository().deleteOffer(offerId));
+}
+
+async function remove(operation: () => Promise<void>): Promise<FormState> {
+  try {
+    await operation();
+  } catch (error) {
+    if (error instanceof CatalogError) return { error: error.message };
+    throw error;
+  }
+  afterCatalogChange();
+  return { success: "Gelöscht." };
+}
+
+function afterCatalogChange() {
+  // Shop pages show the change on the next request, the admin page right away.
+  updateTag(CATALOG_CACHE_TAG);
+  refresh();
 }
 
 // Bound arguments arrive from the browser like any other input, so check them too.

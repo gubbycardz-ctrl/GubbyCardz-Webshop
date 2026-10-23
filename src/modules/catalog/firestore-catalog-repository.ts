@@ -122,6 +122,44 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
       const docs = await getAllByIds(products, ids);
       return docs.map((data) => productSchema.parse(data));
     },
+
+    async deleteGame(id) {
+      await db.runTransaction(async (transaction) => {
+        const [sets, gameProducts] = await Promise.all([
+          transaction.get(cardSets.where("gameId", "==", id).limit(1)),
+          transaction.get(products.where("gameId", "==", id).limit(1)),
+        ]);
+        if (!sets.empty || !gameProducts.empty) {
+          throw new CatalogError("Das Spiel hat noch Sets oder Produkte – bitte zuerst diese löschen.");
+        }
+        transaction.delete(games.doc(id));
+      });
+    },
+
+    async deleteCardSet(id) {
+      await db.runTransaction(async (transaction) => {
+        const setProducts = await transaction.get(products.where("setId", "==", id).limit(1));
+        if (!setProducts.empty) {
+          throw new CatalogError("Im Set sind noch Produkte – bitte zuerst diese löschen.");
+        }
+        transaction.delete(cardSets.doc(id));
+      });
+    },
+
+    async deleteProduct(id) {
+      await db.runTransaction(async (transaction) => {
+        const productOffers = await transaction.get(offers.where("productId", "==", id).limit(MAX_PAGE_SIZE + 1));
+        if (productOffers.size > MAX_PAGE_SIZE) {
+          throw new CatalogError(`Mehr als ${MAX_PAGE_SIZE} Angebote – bitte zuerst einige Angebote löschen.`);
+        }
+        productOffers.docs.forEach((offer) => transaction.delete(offer.ref));
+        transaction.delete(products.doc(id));
+      });
+    },
+
+    async deleteOffer(id) {
+      await offers.doc(id).delete();
+    },
   };
 
   async function getAllByIds(collection: CollectionReference, ids: readonly string[]) {

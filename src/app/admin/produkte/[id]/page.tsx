@@ -5,6 +5,8 @@ import { Suspense } from "react";
 import { requireAdmin } from "@/modules/auth/server";
 import { PRODUCT_KIND_LABELS } from "@/modules/catalog";
 import { getCatalogRepository } from "@/modules/catalog/server";
+import { deleteProduct } from "../../catalog-actions";
+import { DeleteButton } from "../../_components/delete-button";
 import { OfferForm, OfferRow } from "../../_components/offer-forms";
 
 export const metadata: Metadata = { title: "Produkt" };
@@ -31,7 +33,14 @@ async function ProductWithOffers({ params }: Pick<PageProps<"/admin/produkte/[id
         <Link href={`/admin/produkte?filter=${product.gameId ?? "zubehoer"}`} className="text-sm text-foreground/60 hover:text-brand-blue">
           ← Produkte
         </Link>
-        <h1 className="mt-2 text-3xl font-bold">{product.name}</h1>
+        <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
+          <h1 className="text-3xl font-bold">{product.name}</h1>
+          <DeleteButton
+            action={deleteProduct.bind(null, product.id)}
+            confirmMessage={`Produkt „${product.name}“ und ${offers.length === 1 ? "sein Angebot" : `alle ${offers.length} Angebote`} wirklich löschen?`}
+            label="Produkt löschen"
+          />
+        </div>
         <p className="mt-1 text-sm text-foreground/60">
           {PRODUCT_KIND_LABELS[product.kind]}
           {product.kind === "single" && ` · ${product.collectorNumber} · ${product.rarity}`}

@@ -197,6 +197,9 @@ Vor jedem Commit müssen `lint`, `typecheck`, `test` und `build` grün sein – 
   Fehlermeldungen) liegt im Modul (`admin-forms.ts`) und ist unit-getestet.
 - Admin-Seiten lesen **ungecacht** (`getCatalogRepository()`), damit sie eigene Änderungen sofort sehen.
 - Gebundene Argumente von Server Actions (z. B. `productId`) kommen vom Browser → wie jede Eingabe prüfen.
+- Löschen: immer mit Bestätigung (`DeleteButton`). Regeln im Repository: Spiel nur ohne Sets/Produkte, Set nur ohne
+  Produkte, Produkt löscht seine Angebote mit. Bestellungen bleiben unberührt (Schnappschuss).
+- Admin-Server-Actions rufen nach Änderungen `updateTag()` (Shop) und `refresh()` (aktuelle Admin-Seite) auf.
 `.firebaserc`: Standard ist das Demo-Projekt `demo-gubbycardz` (Emulatoren ohne Login), `prod` ist das echte Projekt.
 Live-Shop: https://gubbycardz-web--gubbycardz-80976.europe-west4.hosted.app – jeder Merge auf `main` wird automatisch ausgerollt.
 

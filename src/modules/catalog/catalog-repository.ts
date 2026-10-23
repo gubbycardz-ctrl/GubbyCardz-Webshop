@@ -29,6 +29,16 @@ export interface CatalogRepository {
   getOffersByIds(ids: readonly string[]): Promise<Offer[]>;
   /** Missing ids are left out. At most MAX_PAGE_SIZE ids per call. */
   getProductsByIds(ids: readonly string[]): Promise<Product[]>;
+
+  // Deleting never leaves dangling references: blocked while something still depends on the entry.
+  // Orders are unaffected, because they keep their own snapshot of names and prices.
+  /** Fails while the game still has sets or products. */
+  deleteGame(id: string): Promise<void>;
+  /** Fails while products still belong to the set. */
+  deleteCardSet(id: string): Promise<void>;
+  /** Deletes the product together with all its offers. */
+  deleteProduct(id: string): Promise<void>;
+  deleteOffer(id: string): Promise<void>;
 }
 
 export class CatalogError extends Error {

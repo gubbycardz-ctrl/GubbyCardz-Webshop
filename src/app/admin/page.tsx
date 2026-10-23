@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { requireAdmin } from "@/modules/auth/server";
 import { getCatalogRepository } from "@/modules/catalog/server";
+import { deleteCardSet, deleteGame } from "./catalog-actions";
+import { DeleteButton } from "./_components/delete-button";
 import { CardSetForm, GameForm } from "./_components/game-forms";
 
 export default function AdminPage() {
@@ -27,14 +29,27 @@ async function GamesAndSets() {
           <ul className="mt-4 grid gap-4 sm:grid-cols-2">
             {games.map((game, index) => (
               <li key={game.id} className="rounded-xl border border-foreground/10 p-4">
-                <h2 className="font-semibold">{game.name}</h2>
+                <div className="flex items-start justify-between gap-3">
+                  <h2 className="font-semibold">{game.name}</h2>
+                  <DeleteButton
+                    action={deleteGame.bind(null, game.id)}
+                    confirmMessage={`Spiel „${game.name}“ wirklich löschen?`}
+                    label="Spiel löschen"
+                  />
+                </div>
                 {setsPerGame[index].length === 0 ? (
                   <p className="mt-2 text-sm text-foreground/60">Noch keine Sets.</p>
                 ) : (
                   <ul className="mt-2 text-sm text-foreground/70">
                     {setsPerGame[index].map((set) => (
-                      <li key={set.id}>
-                        {set.name} ({set.code}){set.releaseDate && ` · ${formatDate(set.releaseDate)}`}
+                      <li key={set.id} className="flex items-start justify-between gap-3">
+                        <span>
+                          {set.name} ({set.code}){set.releaseDate && ` · ${formatDate(set.releaseDate)}`}
+                        </span>
+                        <DeleteButton
+                          action={deleteCardSet.bind(null, set.id)}
+                          confirmMessage={`Set „${set.name}“ wirklich löschen?`}
+                        />
                       </li>
                     ))}
                   </ul>
