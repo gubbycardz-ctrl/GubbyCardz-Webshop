@@ -1,6 +1,7 @@
 import { describeOffer } from "@/modules/catalog";
 import type { PricedCart } from "@/modules/cart";
-import { shippingCostCents } from "@/modules/shipping";
+import { MAX_ORDER_VALUE_CENTS, exceedsMaxOrderValue, shippingCostCents } from "@/modules/shipping";
+import { formatEuro } from "@/shared/money";
 import type { CheckoutCustomer } from "./checkout-form";
 import type { Order } from "./order";
 
@@ -16,6 +17,10 @@ export function buildOrder(input: { id: string; now: Date; customer: CheckoutCus
   // The customer must see the corrected cart before paying for something else than expected.
   if (cart.missingCount > 0 || cart.lines.some((line) => line.issue)) {
     return { ok: false, error: "Einige Artikel sind nicht mehr in der gewünschten Menge verfügbar. Bitte prüfe deinen Warenkorb." };
+  }
+
+  if (exceedsMaxOrderValue(cart.subtotalCents)) {
+    return { ok: false, error: maxOrderValueMessage() };
   }
 
   const shippingCents = shippingCostCents(customer.shippingAddress.country);
@@ -40,4 +45,8 @@ export function buildOrder(input: { id: string; now: Date; customer: CheckoutCus
       totalCents: cart.subtotalCents + shippingCents,
     },
   };
+}
+
+export function maxOrderValueMessage() {
+  return `Wir versenden versichert bis ${formatEuro(MAX_ORDER_VALUE_CENTS)} Warenwert pro Bestellung. Bitte reduziere deinen Warenkorb.`;
 }

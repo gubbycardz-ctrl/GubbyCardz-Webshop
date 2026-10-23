@@ -250,6 +250,7 @@ Nur eintragen, was **tatsächlich entschieden** ist.
 | Bestellung     | Gastbestellung (ohne Kundenkonto) | Antwort Shop-Betreiber; weniger Hürden, weniger gespeicherte Daten (DSGVO) |
 | Stripe         | Konto vorhanden; Schlüssel nur im Secret Manager | Antwort Shop-Betreiber |
 | Versand        | Immer versichert, nur **DE** und **NL**. 5-kg-Paket, versichert bis 500 €: **DE 7,69 €**, **NL 17,49 €** | Antwort Shop-Betreiber; Preise zentral in `src/modules/shipping/` |
+| Bestellwert    | **Max. 500,00 € Warenwert pro Bestellung** (Versand nicht eingerechnet); Prüfung verbindlich in `buildOrder`, Hinweis im Warenkorb | Versicherungsgrenze des Pakets; Entscheidung Shop-Betreiber statt Höherversicherung. Einzelartikel über 500 € sind damit nicht bestellbar |
 | Bestellablauf  | Bestellung = Schnappschuss (Namen, Preise); beim Absenden wird der **Bestand in derselben Transaktion reserviert**; Zahlung bestätigt → `paid`, Abbruch/Ablauf → `cancelled` + Bestand zurück (jeweils idempotent) | Kein Überverkauf, auch bei gleichzeitigen Käufen (Integrationstest); doppelte Stripe-Webhooks sind harmlos |
 | Auth-Domains   | Live-Domain von App Hosting ist in Firebase Auth als autorisierte Domain eingetragen | Sonst schließt sich das Google-Anmeldefenster sofort (`auth/unauthorized-domain`); bei eigener Domain diese ebenfalls eintragen |
 | Firestore-Deploy | Claude darf Firestore-Rules und -Indexe selbst in die Produktion deployen – immer vom Stand auf `main` | Freigabe Shop-Betreiber; Code-Rollout läuft ohnehin automatisch über App Hosting |

@@ -46,6 +46,17 @@ describe("buildOrder", () => {
     expect(result.ok && result.order.shippingCents).toBe(1749);
   });
 
+  it("accepts goods worth exactly 500 € but refuses more", () => {
+    const atLimit: PricedCart = { ...cart, subtotalCents: 50_000 };
+    const aboveLimit: PricedCart = { ...cart, subtotalCents: 50_001 };
+
+    expect(buildOrder({ id: "x", now, customer, cart: atLimit }).ok).toBe(true);
+    expect(buildOrder({ id: "x", now, customer, cart: aboveLimit })).toEqual({
+      ok: false,
+      error: "Wir versenden versichert bis 500,00\u00a0€ Warenwert pro Bestellung. Bitte reduziere deinen Warenkorb.",
+    });
+  });
+
   it("refuses an empty cart", () => {
     const empty: PricedCart = { lines: [], missingCount: 0, subtotalCents: 0, itemCount: 0 };
     expect(buildOrder({ id: "x", now, customer, cart: empty })).toEqual({ ok: false, error: "Dein Warenkorb ist leer." });
