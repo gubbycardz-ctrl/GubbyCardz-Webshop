@@ -11,27 +11,27 @@ import {
   parseOfferUpdateForm,
   parseProductForm,
   parseProductUpdateForm,
-  type FormFields,
   type FormResult,
 } from "@/modules/catalog";
 import { CATALOG_CACHE_TAG, getCatalogRepository } from "@/modules/catalog/server";
 import { requireAdmin } from "@/modules/auth/server";
+import { formFieldsOf } from "@/shared/form-validation";
 
 export type FormState = { error?: string; success?: string };
 
 export async function createGame(_: FormState, formData: FormData): Promise<FormState> {
   await requireAdmin();
-  return save(parseGameForm(fieldsOf(formData)), (game) => getCatalogRepository().saveGame(game), "Spiel gespeichert.");
+  return save(parseGameForm(formFieldsOf(formData)), (game) => getCatalogRepository().saveGame(game), "Spiel gespeichert.");
 }
 
 export async function createCardSet(_: FormState, formData: FormData): Promise<FormState> {
   await requireAdmin();
-  return save(parseCardSetForm(fieldsOf(formData)), (set) => getCatalogRepository().saveCardSet(set), "Set gespeichert.");
+  return save(parseCardSetForm(formFieldsOf(formData)), (set) => getCatalogRepository().saveCardSet(set), "Set gespeichert.");
 }
 
 export async function createProduct(_: FormState, formData: FormData): Promise<FormState> {
   await requireAdmin();
-  const parsed = parseProductForm(fieldsOf(formData), crypto.randomUUID());
+  const parsed = parseProductForm(formFieldsOf(formData), crypto.randomUUID());
   const state = await save(parsed, (product) => getCatalogRepository().saveProduct(product), "");
   // Straight to the new product, where its offers are added.
   if (!state.error && parsed.ok) redirect(`/admin/produkte/${parsed.value.id}`);
@@ -44,13 +44,13 @@ export async function updateProduct(productId: string, _: FormState, formData: F
   const repository = getCatalogRepository();
   const product = await repository.getProductById(productId);
   if (!product) return { error: "Produkt nicht gefunden." };
-  return save(parseProductUpdateForm(fieldsOf(formData), product), (updated) => repository.saveProduct(updated), "Gespeichert.");
+  return save(parseProductUpdateForm(formFieldsOf(formData), product), (updated) => repository.saveProduct(updated), "Gespeichert.");
 }
 
 export async function createOffer(productId: string, _: FormState, formData: FormData): Promise<FormState> {
   await requireAdmin();
   if (!isId(productId)) return { error: "Produkt nicht gefunden." };
-  const fields = fieldsOf(formData);
+  const fields = formFieldsOf(formData);
   const internals = parseOfferInternalsForm(fields);
   if (!internals.ok) return { error: internals.error };
   const parsed = parseOfferForm(fields, { id: crypto.randomUUID(), productId });
@@ -63,7 +63,7 @@ export async function updateOffer(productId: string, offerId: string, _: FormSta
   const repository = getCatalogRepository();
   const offer = (await repository.listOffers(productId)).find((candidate) => candidate.id === offerId);
   if (!offer) return { error: "Angebot nicht gefunden." };
-  const fields = fieldsOf(formData);
+  const fields = formFieldsOf(formData);
   const internals = parseOfferInternalsForm(fields);
   if (!internals.ok) return { error: internals.error };
   return save(parseOfferUpdateForm(fields, offer), (updated) => repository.saveOffer(updated, internals.value), "Gespeichert.");
@@ -130,12 +130,4 @@ function afterCatalogChange() {
 // Bound arguments arrive from the browser like any other input, so check them too.
 function isId(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 && value.length <= 128;
-}
-
-function fieldsOf(formData: FormData): FormFields {
-  const fields: FormFields = {};
-  for (const [key, value] of formData) {
-    if (typeof value === "string") fields[key] = value;
-  }
-  return fields;
 }

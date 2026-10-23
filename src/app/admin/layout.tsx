@@ -34,6 +34,9 @@ async function AdminBar() {
         <Link href="/admin/produkte" className="hover:text-brand-blue">
           Produkte
         </Link>
+        <Link href="/admin/bestellungen" className="hover:text-brand-blue">
+          Bestellungen
+        </Link>
       </nav>
       <form action={signOut} className="flex items-center gap-3">
         <span className="text-foreground/60">{user.email}</span>

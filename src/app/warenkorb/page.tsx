@@ -60,19 +60,17 @@ async function CartContents() {
           <span className="font-semibold">{formatEuro(cart.subtotalCents)}</span>
         </p>
         <PriceNote />
-        {exceedsMaxOrderValue(cart.subtotalCents) && (
+        {exceedsMaxOrderValue(cart.subtotalCents) ? (
           <p role="alert" className="max-w-md text-right text-sm text-brand-red">
             {maxOrderValueMessage()}
           </p>
+        ) : (
+          cart.lines.length > 0 && (
+            <Link href="/kasse" className="mt-3 rounded-lg bg-brand-blue px-5 py-2.5 font-medium text-white hover:opacity-90">
+              Zur Kasse
+            </Link>
+          )
         )}
-        <button
-          type="button"
-          disabled
-          title="Die Kasse folgt in Kürze"
-          className="mt-3 rounded-lg bg-brand-blue px-5 py-2.5 font-medium text-white opacity-50"
-        >
-          Zur Kasse (folgt in Kürze)
-        </button>
       </div>
     </>
   );
