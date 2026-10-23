@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeOffer } from ".";
+import { describeOffer, describeProductKind } from ".";
 
 const base = { id: "o1", productId: "p1", priceCents: 100, stock: 1 };
 
@@ -19,5 +19,14 @@ describe("describeOffer", () => {
   it("describes sealed products by language and accessories as new", () => {
     expect(describeOffer({ ...base, type: "sealed", language: "zh-Hans" })).toBe("Chinesisch (vereinfacht)");
     expect(describeOffer({ ...base, type: "accessory" })).toBe("Neu");
+  });
+});
+
+describe("describeProductKind", () => {
+  it("names the category of sealed products and falls back to the kind", () => {
+    const sealed = { id: "p1", kind: "sealed", name: "151 ETB", slug: "151-etb", gameId: "pokemon" } as const;
+    expect(describeProductKind({ ...sealed, category: "elite-trainer-box" })).toBe("Elite Trainer Box");
+    expect(describeProductKind(sealed)).toBe("Sealed");
+    expect(describeProductKind({ id: "p2", kind: "accessory", name: "Sleeves", slug: "sleeves" })).toBe("Zubehör");
   });
 });
