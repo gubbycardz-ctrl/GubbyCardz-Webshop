@@ -164,6 +164,7 @@ apphosting.yaml     Firebase App Hosting (Instanz-Limits = Kostenschutz)
 | `npm test` | Unit-Tests (Vitest, Testdateien `*.test.ts` neben dem Code) |
 | `npm run test:integration` | Integrationstests (`*.integration.test.ts`) gegen den Firestore-Emulator – startet ihn selbst |
 | `npm run build` | Produktions-Build |
+| `npx firebase deploy --only firestore --project prod` | Firestore-Rules und -Indexe in die Produktion (nach Merge auf `main`) |
 
 Vor jedem Commit müssen `lint`, `typecheck`, `test` und `build` grün sein – bei Änderungen am Datenzugriff zusätzlich `test:integration`.
 
@@ -239,4 +240,5 @@ Nur eintragen, was **tatsächlich entschieden** ist.
 | Produktpflege  | Admin-Bereich im Shop | Antwort Shop-Betreiber |
 | Admin-Login    | Google-Anmeldung (Firebase Auth) → httpOnly-Session-Cookie `__session` (5 Tage); Admins = verifizierte E-Mails aus `ADMIN_EMAILS` | Keine eigenen Passwörter; Abmelden widerruft alle Sessions; Rechte werden bei jeder Anfrage neu geprüft |
 | Warenkorb      | httpOnly-Cookie `cart` (nur Angebots-IDs + Mengen, max. 50 Positionen, 30 Tage); Preise/Bestand immer frisch vom Server | Keine DB-Schreibzugriffe für Besucher/Bots; manipulierte Cookies können keine Preise ändern; technisch notwendig → kein Cookie-Banner nötig |
+| Firestore-Deploy | Claude darf Firestore-Rules und -Indexe selbst in die Produktion deployen – immer vom Stand auf `main` | Freigabe Shop-Betreiber; Code-Rollout läuft ohnehin automatisch über App Hosting |
 | Admin-Liste    | Produktion: Secret `adminEmails` im Secret Manager (nicht im öffentlichen Repo); lokal: `admin@example.com` | Ändern: `npx firebase apphosting:secrets:set adminEmails --project prod` |
