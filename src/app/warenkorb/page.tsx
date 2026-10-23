@@ -5,6 +5,7 @@ import { describeOffer, PRODUCT_KIND_LABELS } from "@/modules/catalog";
 import type { PricedCartLine } from "@/modules/cart";
 import { getPricedCart } from "@/modules/cart/server";
 import { formatEuro } from "@/shared/money";
+import { PriceNote } from "@/app/price-note";
 import { changeQuantity, removeFromCart } from "./actions";
 
 export const metadata: Metadata = {
@@ -56,7 +57,7 @@ async function CartContents() {
           Zwischensumme ({cart.itemCount} Artikel):{" "}
           <span className="font-semibold">{formatEuro(cart.subtotalCents)}</span>
         </p>
-        <p className="text-sm text-foreground/60">Versandkosten werden im nächsten Schritt berechnet.</p>
+        <PriceNote />
         <button
           type="button"
           disabled

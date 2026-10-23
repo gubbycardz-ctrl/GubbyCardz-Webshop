@@ -240,5 +240,10 @@ Nur eintragen, was **tatsächlich entschieden** ist.
 | Produktpflege  | Admin-Bereich im Shop | Antwort Shop-Betreiber |
 | Admin-Login    | Google-Anmeldung (Firebase Auth) → httpOnly-Session-Cookie `__session` (5 Tage); Admins = verifizierte E-Mails aus `ADMIN_EMAILS` | Keine eigenen Passwörter; Abmelden widerruft alle Sessions; Rechte werden bei jeder Anfrage neu geprüft |
 | Warenkorb      | httpOnly-Cookie `cart` (nur Angebots-IDs + Mengen, max. 50 Positionen, 30 Tage); Preise/Bestand immer frisch vom Server | Keine DB-Schreibzugriffe für Besucher/Bots; manipulierte Cookies können keine Preise ändern; technisch notwendig → kein Cookie-Banner nötig |
+| Umsatzsteuer   | Aktuell Kleinunternehmer (§ 19 UStG): Hinweis „keine Umsatzsteuer“ + „zzgl. Versandkosten“ an jedem Preis; **ab nächstem Jahr regulär mit USt** | Pflichtangabe (PAngV); Texte zentral in `src/modules/pricing/` – beim Wechsel dort plus Rechnungen anpassen |
+| Bestellung     | Gastbestellung (ohne Kundenkonto) | Antwort Shop-Betreiber; weniger Hürden, weniger gespeicherte Daten (DSGVO) |
+| Stripe         | Konto vorhanden; Schlüssel nur im Secret Manager | Antwort Shop-Betreiber |
+| Versand        | _offen – wird vom Shop-Betreiber geklärt_ | |
+| Auth-Domains   | Live-Domain von App Hosting ist in Firebase Auth als autorisierte Domain eingetragen | Sonst schließt sich das Google-Anmeldefenster sofort (`auth/unauthorized-domain`); bei eigener Domain diese ebenfalls eintragen |
 | Firestore-Deploy | Claude darf Firestore-Rules und -Indexe selbst in die Produktion deployen – immer vom Stand auf `main` | Freigabe Shop-Betreiber; Code-Rollout läuft ohnehin automatisch über App Hosting |
 | Admin-Liste    | Produktion: Secret `adminEmails` im Secret Manager (nicht im öffentlichen Repo); lokal: `admin@example.com` | Ändern: `npx firebase apphosting:secrets:set adminEmails --project prod` |
