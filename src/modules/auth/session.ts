@@ -19,14 +19,21 @@ export type StartSessionResult = { ok: true } | { ok: false; reason: "invalid-to
 /** Exchanges a Firebase ID token for an httpOnly session cookie – for admins only. */
 export async function startAdminSession(idToken: string): Promise<StartSessionResult> {
   const auth = getAdminAuth();
-  const decoded = await auth.verifyIdToken(idToken, true).catch(() => null);
+  const decoded = await auth.verifyIdToken(idToken, true).catch((error: unknown) => {
+    logRejectedSignIn("invalid-token", errorCode(error));
+    return null;
+  });
   if (!decoded) return { ok: false, reason: "invalid-token" };
 
   if (Date.now() / 1000 - decoded.auth_time > MAX_SIGN_IN_AGE_SECONDS) {
+    logRejectedSignIn("stale-sign-in", decoded.uid);
     return { ok: false, reason: "stale-sign-in" };
   }
   const user = toSessionUser(decoded);
-  if (!isAdmin(user, adminEmails())) return { ok: false, reason: "not-admin" };
+  if (!isAdmin(user, adminEmails())) {
+    logRejectedSignIn("not-admin", decoded.uid);
+    return { ok: false, reason: "not-admin" };
+  }
 
   const sessionCookie = await auth.createSessionCookie(idToken, { expiresIn: SESSION_DURATION_MS });
   (await cookies()).set(SESSION_COOKIE, sessionCookie, {
@@ -64,6 +71,15 @@ export async function endSession() {
   const user = await getSessionUser();
   (await cookies()).delete(SESSION_COOKIE);
   if (user) await getAdminAuth().revokeRefreshTokens(user.uid);
+}
+
+// Shows up in the App Hosting logs. Only reason and uid/error code – never tokens or email addresses.
+function logRejectedSignIn(reason: string, detail: string) {
+  console.warn(`Admin sign-in rejected: ${reason} (${detail})`);
+}
+
+function errorCode(error: unknown) {
+  return typeof error === "object" && error !== null && "code" in error ? String(error.code) : "unknown";
 }
 
 function adminEmails() {
