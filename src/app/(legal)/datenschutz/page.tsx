@@ -35,6 +35,10 @@ export default function PrivacyPage() {
           30 Tage.
         </li>
         <li>
+          <strong>checkout</strong> – merkt sich deine E-Mail-Adresse und Lieferanschrift zwischen Adresseingabe und
+          Bestellübersicht, höchstens 24 Stunden; wird beim Absenden der Bestellung gelöscht.
+        </li>
+        <li>
           <strong>__session</strong> – nur für die Anmeldung von Shop-Mitarbeitern im Verwaltungsbereich, 5 Tage.
         </li>
       </ul>
