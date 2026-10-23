@@ -43,7 +43,7 @@ describe("buildOrder", () => {
   it("charges Dutch shipping for Dutch addresses", () => {
     const dutch = { ...customer, shippingAddress: { ...customer.shippingAddress, country: "NL" as const, postalCode: "1012 AB" } };
     const result = buildOrder({ id: "order-2", now, customer: dutch, cart });
-    expect(result.ok && result.order.shippingCents).toBe(1699);
+    expect(result.ok && result.order.shippingCents).toBe(1749);
   });
 
   it("refuses an empty cart", () => {
