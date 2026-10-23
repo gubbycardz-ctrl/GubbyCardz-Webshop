@@ -1,4 +1,4 @@
-import type { CollectionReference, DocumentData, Firestore, Query } from "firebase-admin/firestore";
+import type { CollectionReference, DocumentData, DocumentSnapshot, Firestore, Query } from "firebase-admin/firestore";
 import {
   CatalogError,
   DEFAULT_PAGE_SIZE,
@@ -7,6 +7,7 @@ import {
 } from "./catalog-repository";
 import { cardSetSchema, gameSchema, type CardSet } from "./game";
 import { isOfferTypeAllowedFor, offerSchema } from "./offer";
+import { offerInternalsSchema } from "./offer-internals";
 import { productSchema } from "./product";
 
 export const CATALOG_COLLECTIONS = {
@@ -14,6 +15,8 @@ export const CATALOG_COLLECTIONS = {
   cardSets: "cardSets",
   products: "products",
   offers: "offers",
+  // Same document id as the offer. Admin only, see offer-internals.ts.
+  offerInternals: "offerInternals",
 } as const;
 
 // Upper bounds for lists that are not paginated, so a list can never grow unbounded.
@@ -25,6 +28,7 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
   const cardSets = db.collection(CATALOG_COLLECTIONS.cardSets);
   const products = db.collection(CATALOG_COLLECTIONS.products);
   const offers = db.collection(CATALOG_COLLECTIONS.offers);
+  const offerInternals = db.collection(CATALOG_COLLECTIONS.offerInternals);
 
   return {
     async saveGame(game) {
@@ -86,10 +90,14 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
       return snapshot.docs.map((doc) => productSchema.parse(doc.data()));
     },
 
-    async saveOffer(offer) {
+    async saveOffer(offer, internals) {
       const valid = offerSchema.parse(offer);
+      const validInternals = internals && offerInternalsSchema.parse(internals);
       await db.runTransaction(async (transaction) => {
-        const productDoc = await transaction.get(products.doc(valid.productId));
+        const [productDoc, sameSku] = await Promise.all([
+          transaction.get(products.doc(valid.productId)),
+          validInternals?.sku ? transaction.get(offerInternals.where("sku", "==", validInternals.sku).limit(2)) : null,
+        ]);
         if (!productDoc.exists) {
           throw new CatalogError(`Produkt "${valid.productId}" existiert nicht`);
         }
@@ -99,7 +107,13 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
             `Angebotsart "${valid.type}" passt nicht zu Produktart "${product.kind}"`,
           );
         }
+        if (sameSku?.docs.some((doc) => doc.id !== valid.id)) {
+          throw new CatalogError(`Die SKU ${validInternals?.sku} ist schon an ein anderes Angebot vergeben`);
+        }
         transaction.set(offers.doc(valid.id), toDocument(valid));
+        if (validInternals) {
+          transaction.set(offerInternals.doc(valid.id), toDocument({ offerId: valid.id, ...validInternals }));
+        }
       });
     },
 
@@ -114,13 +128,18 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
     },
 
     async getOffersByIds(ids) {
-      const docs = await getAllByIds(offers, ids);
-      return docs.map((data) => offerSchema.parse(data));
+      const snapshots = await getAllByIds(offers, ids);
+      return snapshots.map((snapshot) => offerSchema.parse(snapshot.data()));
+    },
+
+    async getOfferInternals(offerIds) {
+      const snapshots = await getAllByIds(offerInternals, offerIds);
+      return new Map(snapshots.map((snapshot) => [snapshot.id, offerInternalsSchema.parse(snapshot.data())]));
     },
 
     async getProductsByIds(ids) {
-      const docs = await getAllByIds(products, ids);
-      return docs.map((data) => productSchema.parse(data));
+      const snapshots = await getAllByIds(products, ids);
+      return snapshots.map((snapshot) => productSchema.parse(snapshot.data()));
     },
 
     async deleteGame(id) {
@@ -152,22 +171,25 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
         if (productOffers.size > MAX_PAGE_SIZE) {
           throw new CatalogError(`Mehr als ${MAX_PAGE_SIZE} Angebote – bitte zuerst einige Angebote löschen.`);
         }
-        productOffers.docs.forEach((offer) => transaction.delete(offer.ref));
+        productOffers.docs.forEach((offer) => {
+          transaction.delete(offer.ref);
+          transaction.delete(offerInternals.doc(offer.id));
+        });
         transaction.delete(products.doc(id));
       });
     },
 
     async deleteOffer(id) {
-      await offers.doc(id).delete();
+      await db.batch().delete(offers.doc(id)).delete(offerInternals.doc(id)).commit();
     },
   };
 
-  async function getAllByIds(collection: CollectionReference, ids: readonly string[]) {
+  async function getAllByIds(collection: CollectionReference, ids: readonly string[]): Promise<DocumentSnapshot[]> {
     const uniqueIds = [...new Set(ids)];
     if (uniqueIds.length === 0) return [];
     if (uniqueIds.length > MAX_PAGE_SIZE) throw new CatalogError(`Höchstens ${MAX_PAGE_SIZE} Einträge auf einmal`);
     const snapshots = await db.getAll(...uniqueIds.map((id) => collection.doc(id)));
-    return snapshots.filter((snapshot) => snapshot.exists).map((snapshot) => snapshot.data());
+    return snapshots.filter((snapshot) => snapshot.exists);
   }
 }
 

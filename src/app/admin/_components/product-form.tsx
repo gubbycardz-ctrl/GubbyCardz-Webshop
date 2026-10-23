@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PRODUCT_KIND_LABELS, type CardSet, type Game, type Product, type ProductKind } from "@/modules/catalog";
+import { PRODUCT_KIND_LABELS, SEALED_CATEGORIES, type CardSet, type Game, type Product, type ProductKind } from "@/modules/catalog";
 import { createProduct, updateProduct } from "../catalog-actions";
 import { Field, FormMessage, SubmitButton, inputClass, useAdminForm } from "./form-kit";
 
@@ -55,6 +55,11 @@ export function ProductForm({
           ))}
         </select>
       </Field>
+      {kind === "sealed" && (
+        <Field label="Kategorie">
+          <CategorySelect defaultValue={product?.kind === "sealed" ? product.category : undefined} />
+        </Field>
+      )}
       <Field label="Name">
         <input name="name" required defaultValue={product?.name} placeholder="z. B. Glurak ex" className={inputClass} />
       </Field>
@@ -105,5 +110,20 @@ export function ProductForm({
         </p>
       )}
     </form>
+  );
+}
+
+function CategorySelect({ defaultValue }: { defaultValue?: string }) {
+  return (
+    <select name="category" required defaultValue={defaultValue ?? ""} className={inputClass}>
+      <option value="" disabled>
+        – bitte wählen –
+      </option>
+      {Object.entries(SEALED_CATEGORIES).map(([value, label]) => (
+        <option key={value} value={value}>
+          {label}
+        </option>
+      ))}
+    </select>
   );
 }

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { requireAdmin } from "@/modules/auth/server";
-import { PRODUCT_KIND_LABELS, type Product } from "@/modules/catalog";
+import { describeProductKind, type Product } from "@/modules/catalog";
 import { getCatalogRepository } from "@/modules/catalog/server";
 import { ProductForm } from "../_components/product-form";
 
@@ -81,7 +81,10 @@ function ProductList({ products }: { products: Product[] }) {
               {product.name}
               {product.kind === "single" && <span className="text-foreground/60"> · {product.collectorNumber}</span>}
             </span>
-            <span className="text-sm text-foreground/60">{PRODUCT_KIND_LABELS[product.kind]}</span>
+            <span className="text-sm text-foreground/60">
+              {describeProductKind(product)}
+              {product.kind === "sealed" && !product.category && <span className="text-brand-red"> · Kategorie fehlt</span>}
+            </span>
           </Link>
         </li>
       ))}

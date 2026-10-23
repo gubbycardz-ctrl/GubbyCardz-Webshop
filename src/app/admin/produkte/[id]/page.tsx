@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { requireAdmin } from "@/modules/auth/server";
-import { PRODUCT_KIND_LABELS } from "@/modules/catalog";
+import { describeProductKind } from "@/modules/catalog";
 import { getCatalogRepository } from "@/modules/catalog/server";
 import { deleteProduct } from "../../catalog-actions";
 import { DeleteButton } from "../../_components/delete-button";
@@ -29,6 +29,7 @@ async function ProductWithOffers({ params }: Pick<PageProps<"/admin/produkte/[id
   const [offers, games] = await Promise.all([repository.listOffers(product.id), repository.listGames()]);
   // All games' sets, because the product may move to another game.
   const sets = (await Promise.all(games.map((game) => repository.listCardSets(game.id)))).flat();
+  const internals = await repository.getOfferInternals(offers.map((offer) => offer.id));
 
   return (
     <div className="flex flex-col gap-10">
@@ -45,7 +46,7 @@ async function ProductWithOffers({ params }: Pick<PageProps<"/admin/produkte/[id
           />
         </div>
         <p className="mt-1 text-sm text-foreground/60">
-          {PRODUCT_KIND_LABELS[product.kind]}
+          {describeProductKind(product)}
           {product.kind === "single" && ` · ${product.collectorNumber} · ${product.rarity}`}
           {" · "}
           <Link href={`/produkte/${product.slug}`} className="text-brand-blue hover:underline">
@@ -68,7 +69,7 @@ async function ProductWithOffers({ params }: Pick<PageProps<"/admin/produkte/[id
         ) : (
           <div className="mt-3 divide-y divide-foreground/10 rounded-xl border border-foreground/10">
             {offers.map((offer) => (
-              <OfferRow key={offer.id} offer={offer} />
+              <OfferRow key={offer.id} offer={offer} internals={internals.get(offer.id)} />
             ))}
           </div>
         )}
