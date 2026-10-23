@@ -163,10 +163,20 @@ apphosting.yaml     Firebase App Hosting (Instanz-Limits = Kostenschutz)
 | `npm run typecheck` | TypeScript-Prüfung |
 | `npm test` | Unit-Tests (Vitest, Testdateien `*.test.ts` neben dem Code) |
 | `npm run test:integration` | Integrationstests (`*.integration.test.ts`) gegen den Firestore-Emulator – startet ihn selbst |
+| `npm run test:e2e` | Browser-Tests (Playwright, `e2e/*.spec.ts`) – startet Emulatoren, lädt Beispieldaten, startet den Shop selbst |
+| `npx playwright test` | Browser-Tests gegen bereits laufende Emulatoren (mit `npm run seed`) und `npm run dev` |
 | `npm run build` | Produktions-Build |
 | `npx firebase deploy --only firestore --project prod` | Firestore-Rules und -Indexe in die Produktion (nach Merge auf `main`) |
 
-Vor jedem Commit müssen `lint`, `typecheck`, `test` und `build` grün sein – bei Änderungen am Datenzugriff zusätzlich `test:integration`.
+Vor jedem Commit müssen `lint`, `typecheck`, `test` und `build` grün sein – bei Änderungen am Datenzugriff zusätzlich `test:integration`,
+bei Änderungen an Seiten/Abläufen zusätzlich `test:e2e`.
+
+**CI (`.github/workflows/ci.yml`):** Jeder Pull Request (und jeder Push auf `main`) führt automatisch alle Prüfungen aus –
+Lint, Typecheck, Unit-Tests, Build, Integrationstests und Browser-Tests. Gemergt wird nur, wenn alles grün ist.
+Browser-Tests laufen in der CI gegen den Produktions-Build (`next build` + `next start`) mit den Emulatoren.
+Schlägt ein Browser-Test fehl, liegen Screenshots und Traces als Artefakt `playwright-report` am Workflow-Lauf.
+Neue Browser-Tests verlassen sich nur auf die Beispieldaten aus `scripts/seed-emulator.ts` und schreiben nichts in die Datenbank
+(laufen parallel); Selektoren über Rollen/Texte (`getByRole`), nicht über CSS-Klassen.
 
 **Modul-Aufbau** (Beispiel `src/modules/catalog/`):
 - `index.ts` – öffentliche Schnittstelle, auch für Client-Code sicher (Typen, Schemas, Konstanten)
@@ -237,6 +247,7 @@ Nur eintragen, was **tatsächlich entschieden** ist.
 | Validierung    | Zod | Ein Schema für Formulare, API und Typen |
 | Bot-Schutz     | App Check (reCAPTCHA Enterprise) + Security Rules + Honeypot | Siehe Abschnitt 4 |
 | Tests          | Vitest, Firebase Emulator Suite, Playwright | Unit, Integration, E2E (Checkout) |
+| CI             | GitHub Actions bei jedem PR: Lint, Typecheck, Unit, Build, Integration, Playwright (Chromium) | Fehler fallen vor dem Merge auf – jeder Merge auf `main` geht sofort live |
 | Suche          | Vorerst Firestore-Filter; Typesense/Algolia erst bei Bedarf | YAGNI |
 | Katalog-Modell | **Produkt** (was es gibt: Einzelkarte / Sealed / Zubehör) getrennt von **Angebot** (was wir verkaufen: Preis in Cent, Bestand, Sprache, Zustand oder Grading) | Eine Karte in mehreren Zuständen/Sprachen; Überverkauf-Schutz per Transaktion auf `stock` |
 | Sortiment      | Einzelkarten, gegradete Karten (PSA/BGS/CGC), Sealed, Zubehör | Antwort Shop-Betreiber |
