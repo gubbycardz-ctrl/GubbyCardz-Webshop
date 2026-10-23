@@ -5,7 +5,7 @@ import { parseEuroToCents } from "@/shared/money";
 import { cardSetSchema, gameSchema, type CardSet, type Game } from "./game";
 import { offerSchema, type Offer } from "./offer";
 import { offerInternalsSchema, type OfferInternals } from "./offer-internals";
-import { productSchema, type Product, type ProductKind } from "./product";
+import { productSchema, productSlug, type Product, type ProductKind } from "./product";
 import { toSlug } from "./slug";
 import { keysOf } from "./vocabulary";
 
@@ -14,7 +14,7 @@ import { keysOf } from "./vocabulary";
 
 export type { FormFields, FormResult };
 
-const FIELD_LABELS: Record<string, string> = {
+export const FIELD_LABELS: Record<string, string> = {
   id: "Name",
   slug: "Name",
   name: "Name",
@@ -80,11 +80,11 @@ export function parseProductForm(
     createdAt,
   };
 
-  // Singles get their number into the URL, because many cards share a name.
+  const slug = productSlug({ kind, name, collectorNumber });
   const candidate =
     kind === "single"
-      ? { ...common, slug: toSlug(`${name} ${collectorNumber}`), collectorNumber, rarity: text(fields.rarity) }
-      : { ...common, slug: toSlug(name), ...(kind === "sealed" && { category: text(fields.category) }) };
+      ? { ...common, slug, collectorNumber, rarity: text(fields.rarity) }
+      : { ...common, slug, ...(kind === "sealed" && { category: text(fields.category) }) };
   return validateForm(productSchema, candidate, FIELD_LABELS);
 }
 

@@ -1,4 +1,5 @@
 import type { CollectionReference, DocumentData, DocumentSnapshot, Firestore, Query } from "firebase-admin/firestore";
+import { chunks } from "@/shared/chunks";
 import {
   CatalogError,
   DEFAULT_PAGE_SIZE,
@@ -22,6 +23,8 @@ export const CATALOG_COLLECTIONS = {
 // Upper bounds for lists that are not paginated, so a list can never grow unbounded.
 const MAX_GAMES = 50;
 const MAX_CARD_SETS_PER_GAME = 500;
+// Firestore allows at most 30 values in an "in" filter.
+const MAX_IN_FILTER_VALUES = 30;
 
 export function createFirestoreCatalogRepository(db: Firestore): CatalogRepository {
   const games = db.collection(CATALOG_COLLECTIONS.games);
@@ -144,6 +147,19 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
     async getOfferInternals(offerIds) {
       const snapshots = await getAllByIds(offerInternals, offerIds);
       return new Map(snapshots.map((snapshot) => [snapshot.id, offerInternalsSchema.parse(snapshot.data())]));
+    },
+
+    async getOfferInternalsBySkus(skus) {
+      const uniqueSkus = [...new Set(skus)];
+      if (uniqueSkus.length > MAX_PAGE_SIZE) throw new CatalogError(`Höchstens ${MAX_PAGE_SIZE} Einträge auf einmal`);
+      const snapshots = await Promise.all(
+        chunks(uniqueSkus, MAX_IN_FILTER_VALUES).map((part) => offerInternals.where("sku", "in", part).limit(part.length).get()),
+      );
+      return new Map(
+        snapshots
+          .flatMap((snapshot) => snapshot.docs)
+          .map((doc) => [String(doc.get("sku")), { offerId: doc.id, internals: offerInternalsSchema.parse(doc.data()) }]),
+      );
     },
 
     async getProductsByIds(ids) {

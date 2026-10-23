@@ -35,6 +35,8 @@ export interface CatalogRepository {
   getOffersByIds(ids: readonly string[]): Promise<Offer[]>;
   /** Admin only – never pass the result to shop pages. Keyed by offer id; offers without internals are left out. At most MAX_PAGE_SIZE ids per call. */
   getOfferInternals(offerIds: readonly string[]): Promise<Map<string, OfferInternals>>;
+  /** Admin only, like getOfferInternals. Keyed by SKU; unknown SKUs are left out. At most MAX_PAGE_SIZE SKUs per call. */
+  getOfferInternalsBySkus(skus: readonly string[]): Promise<Map<string, { offerId: string; internals: OfferInternals }>>;
   /** Missing ids are left out. At most MAX_PAGE_SIZE ids per call. */
   getProductsByIds(ids: readonly string[]): Promise<Product[]>;
 
