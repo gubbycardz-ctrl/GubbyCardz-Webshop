@@ -8,6 +8,7 @@ import { isAdmin, parseAdminEmails, type SessionUser } from "./admin-policy";
 
 // Firebase's hosting products only forward a cookie with exactly this name.
 const SESSION_COOKIE = "__session";
+// Cookie name and lifetime are listed in the privacy policy (src/app/(legal)/datenschutz) – keep it in sync.
 const SESSION_DURATION_MS = 5 * 24 * 60 * 60 * 1000;
 // Firebase recommends minting session cookies only from fresh sign-ins.
 const MAX_SIGN_IN_AGE_SECONDS = 5 * 60;

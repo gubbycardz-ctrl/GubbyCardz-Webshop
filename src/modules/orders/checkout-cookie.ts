@@ -7,6 +7,7 @@ import { checkoutFields, parseCheckoutForm, type CheckoutCustomer } from "./chec
 // storing anything for visitors who never order. Technically necessary for the purchase
 // (TTDSG § 25 Abs. 2), short-lived and deleted once the order is placed (DSGVO).
 const CHECKOUT_COOKIE = "checkout";
+// Cookie name and lifetime are listed in the privacy policy (src/app/(legal)/datenschutz) – keep it in sync.
 const CHECKOUT_MAX_AGE_SECONDS = 24 * 60 * 60;
 
 /** The saved customer, or null. A tampered or outdated cookie is validated like fresh form input. */
