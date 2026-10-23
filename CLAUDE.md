@@ -173,6 +173,9 @@ Vor jedem Commit müssen `lint`, `typecheck`, `test` und `build` grün sein – 
 - `server.ts` – nur für Server-Code (`import "server-only"`), z. B. Firestore-Repository mit Admin SDK
 - Fachlogik hängt nur von der Repository-Schnittstelle ab (`CatalogRepository`), nie direkt von Firestore
 - Neue Firestore-Abfragen mit mehreren Feldern brauchen einen Eintrag in `firestore.indexes.json`
+- Modulübergreifende Transaktionen: Das besitzende Modul stellt einen Helfer bereit (z. B. `prepareStockChange`
+  im Katalog), das aufrufende Modul (Bestellung) steuert die Transaktion – keine fremden Collections direkt anfassen.
+- Integrationstests laufen nacheinander (gemeinsame Emulator-Datenbank).
 
 **Seiten & Caching (Next.js 16, Cache Components):**
 - Datenbank-Lesezugriffe für Seiten laufen über gecachte Funktionen (`"use cache"` + `cacheLife` + `cacheTag`),
@@ -243,7 +246,8 @@ Nur eintragen, was **tatsächlich entschieden** ist.
 | Umsatzsteuer   | Aktuell Kleinunternehmer (§ 19 UStG): Hinweis „keine Umsatzsteuer“ + „zzgl. Versandkosten“ an jedem Preis; **ab nächstem Jahr regulär mit USt** | Pflichtangabe (PAngV); Texte zentral in `src/modules/pricing/` – beim Wechsel dort plus Rechnungen anpassen |
 | Bestellung     | Gastbestellung (ohne Kundenkonto) | Antwort Shop-Betreiber; weniger Hürden, weniger gespeicherte Daten (DSGVO) |
 | Stripe         | Konto vorhanden; Schlüssel nur im Secret Manager | Antwort Shop-Betreiber |
-| Versand        | _offen – wird vom Shop-Betreiber geklärt_ | |
+| Versand        | Immer versichert, nur **DE** und **NL**. DE: 5-kg-Paket 7,69 € (Haftung bis 500 €); NL: _Preis noch offen (Platzhalter 16,99 €)_ | Antwort Shop-Betreiber; Preise zentral in `src/modules/shipping/` |
+| Bestellablauf  | Bestellung = Schnappschuss (Namen, Preise); beim Absenden wird der **Bestand in derselben Transaktion reserviert**; Zahlung bestätigt → `paid`, Abbruch/Ablauf → `cancelled` + Bestand zurück (jeweils idempotent) | Kein Überverkauf, auch bei gleichzeitigen Käufen (Integrationstest); doppelte Stripe-Webhooks sind harmlos |
 | Auth-Domains   | Live-Domain von App Hosting ist in Firebase Auth als autorisierte Domain eingetragen | Sonst schließt sich das Google-Anmeldefenster sofort (`auth/unauthorized-domain`); bei eigener Domain diese ebenfalls eintragen |
 | Firestore-Deploy | Claude darf Firestore-Rules und -Indexe selbst in die Produktion deployen – immer vom Stand auf `main` | Freigabe Shop-Betreiber; Code-Rollout läuft ohnehin automatisch über App Hosting |
 | Admin-Liste    | Produktion: Secret `adminEmails` im Secret Manager (nicht im öffentlichen Repo); lokal: `admin@example.com` | Ändern: `npx firebase apphosting:secrets:set adminEmails --project prod` |

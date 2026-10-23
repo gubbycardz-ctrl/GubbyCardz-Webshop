@@ -3,6 +3,7 @@ import "server-only";
 
 export { createFirestoreCatalogRepository } from "./firestore-catalog-repository";
 export { getCatalogRepository } from "./default-repository";
+export { prepareStockChange, type StockItem, type StockShortage } from "./firestore-stock";
 export {
   CATALOG_CACHE_TAG,
   getAvailableOffers,
