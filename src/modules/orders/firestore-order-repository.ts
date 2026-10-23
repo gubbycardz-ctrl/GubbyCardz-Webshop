@@ -1,7 +1,7 @@
 import type { DocumentData, Firestore, Transaction } from "firebase-admin/firestore";
 import { prepareStockChange } from "@/modules/catalog/server";
 import { orderSchema, type Order } from "./order";
-import { OrderError, type OrderRepository } from "./order-repository";
+import { ORDER_LIST_LIMIT, OrderError, type OrderRepository } from "./order-repository";
 
 const ORDERS_COLLECTION = "orders";
 
@@ -27,6 +27,12 @@ export function createFirestoreOrderRepository(db: Firestore): OrderRepository {
       return doc.exists ? orderSchema.parse(doc.data()) : null;
     },
 
+    async listOrders({ status }) {
+      const filtered = status ? orders.where("status", "==", status) : orders;
+      const snapshot = await filtered.orderBy("createdAt", "desc").limit(ORDER_LIST_LIMIT).get();
+      return snapshot.docs.map((doc) => orderSchema.parse(doc.data()));
+    },
+
     async attachPaymentSession(id, paymentSessionId) {
       await orders.doc(id).update({ paymentSessionId });
     },
@@ -48,6 +54,15 @@ export function createFirestoreOrderRepository(db: Firestore): OrderRepository {
         stock.commit();
         transaction.update(orders.doc(id), { status: "cancelled", cancelledAt: at.toISOString() });
         return "cancelled";
+      });
+    },
+
+    async markShipped(id, at) {
+      return db.runTransaction(async (transaction) => {
+        const order = await readOrder(transaction, id);
+        if (order.status !== "paid") return "unchanged";
+        transaction.update(orders.doc(id), { status: "shipped", shippedAt: at.toISOString() });
+        return "shipped";
       });
     },
   };

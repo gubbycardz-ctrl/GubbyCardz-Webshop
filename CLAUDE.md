@@ -163,10 +163,20 @@ apphosting.yaml     Firebase App Hosting (Instanz-Limits = Kostenschutz)
 | `npm run typecheck` | TypeScript-Prüfung |
 | `npm test` | Unit-Tests (Vitest, Testdateien `*.test.ts` neben dem Code) |
 | `npm run test:integration` | Integrationstests (`*.integration.test.ts`) gegen den Firestore-Emulator – startet ihn selbst |
+| `npm run test:e2e` | Browser-Tests (Playwright, `e2e/*.spec.ts`) – startet Emulatoren, lädt Beispieldaten, startet den Shop selbst |
+| `npx playwright test` | Browser-Tests gegen bereits laufende Emulatoren (mit `npm run seed`) und `npm run dev` |
 | `npm run build` | Produktions-Build |
 | `npx firebase deploy --only firestore --project prod` | Firestore-Rules und -Indexe in die Produktion (nach Merge auf `main`) |
 
-Vor jedem Commit müssen `lint`, `typecheck`, `test` und `build` grün sein – bei Änderungen am Datenzugriff zusätzlich `test:integration`.
+Vor jedem Commit müssen `lint`, `typecheck`, `test` und `build` grün sein – bei Änderungen am Datenzugriff zusätzlich `test:integration`,
+bei Änderungen an Seiten/Abläufen zusätzlich `test:e2e`.
+
+**CI (`.github/workflows/ci.yml`):** Jeder Pull Request (und jeder Push auf `main`) führt automatisch alle Prüfungen aus –
+Lint, Typecheck, Unit-Tests, Build, Integrationstests und Browser-Tests. Gemergt wird nur, wenn alles grün ist.
+Browser-Tests laufen in der CI gegen den Produktions-Build (`next build` + `next start`) mit den Emulatoren.
+Schlägt ein Browser-Test fehl, liegen Screenshots und Traces als Artefakt `playwright-report` am Workflow-Lauf.
+Neue Browser-Tests verlassen sich nur auf die Beispieldaten aus `scripts/seed-emulator.ts` und schreiben nichts in die Datenbank
+(laufen parallel); Selektoren über Rollen/Texte (`getByRole`), nicht über CSS-Klassen.
 
 **Modul-Aufbau** (Beispiel `src/modules/catalog/`):
 - `index.ts` – öffentliche Schnittstelle, auch für Client-Code sicher (Typen, Schemas, Konstanten)
@@ -186,6 +196,9 @@ Vor jedem Commit müssen `lint`, `typecheck`, `test` und `build` grün sein – 
 - Unbekannte Slugs → `notFound()` (Next setzt `noindex`).
 - **Ungecachte** Datenbank-/Auth-Zugriffe beim Rendern (Warenkorb, Admin, Session) brauchen vorher
   `await connection()` – sonst meldet Next.js im Dev-Modus „unstable value … while prerendering“.
+- Next.js hält bis zu 3 besuchte Routen versteckt vor (`<Activity>`) und zeigt beim Zurückkehren kurz deren alten Stand.
+  Was sich auf Angezeigtes verlässt (z. B. die Bestellsumme), prüft der Server deshalb selbst nach. In E2E-Tests
+  nur sichtbare Elemente abfragen (`getByRole`/`getByLabel` oder `:visible`).
 
 **Admin-Bereich & Auth (`src/modules/auth/`):**
 - Jede Admin-Seite **und jede Admin-Server-Action** ruft zuerst `requireAdmin()` auf – UI-Ausblenden allein schützt nichts.
@@ -200,6 +213,8 @@ Vor jedem Commit müssen `lint`, `typecheck`, `test` und `build` grün sein – 
 - Löschen: immer mit Bestätigung (`DeleteButton`). Regeln im Repository: Spiel nur ohne Sets/Produkte, Set nur ohne
   Produkte, Produkt löscht seine Angebote mit. Bestellungen bleiben unberührt (Schnappschuss).
 - Admin-Server-Actions rufen nach Änderungen `updateTag()` (Shop) und `refresh()` (aktuelle Admin-Seite) auf.
+- Produkt bearbeiten: Die Produktart ist nach dem Anlegen fest (die Angebote hängen daran). Der Slug folgt dem Namen
+  (+ Nummer bei Einzelkarten) – alte Shop-Links werden dann 404, Weiterleitungen gibt es bewusst (noch) nicht.
 `.firebaserc`: Standard ist das Demo-Projekt `demo-gubbycardz` (Emulatoren ohne Login), `prod` ist das echte Projekt.
 Live-Shop: https://gubbycardz-web--gubbycardz-80976.europe-west4.hosted.app – jeder Merge auf `main` wird automatisch ausgerollt.
 
@@ -237,12 +252,15 @@ Nur eintragen, was **tatsächlich entschieden** ist.
 | Validierung    | Zod | Ein Schema für Formulare, API und Typen |
 | Bot-Schutz     | App Check (reCAPTCHA Enterprise) + Security Rules + Honeypot | Siehe Abschnitt 4 |
 | Tests          | Vitest, Firebase Emulator Suite, Playwright | Unit, Integration, E2E (Checkout) |
+| CI             | GitHub Actions bei jedem PR: Lint, Typecheck, Unit, Build, Integration, Playwright (Chromium) | Fehler fallen vor dem Merge auf – jeder Merge auf `main` geht sofort live |
 | Suche          | Vorerst Firestore-Filter; Typesense/Algolia erst bei Bedarf | YAGNI |
 | Katalog-Modell | **Produkt** (was es gibt: Einzelkarte / Sealed / Zubehör) getrennt von **Angebot** (was wir verkaufen: Preis in Cent, Bestand, Sprache, Zustand oder Grading) | Eine Karte in mehreren Zuständen/Sprachen; Überverkauf-Schutz per Transaktion auf `stock` |
 | Sortiment      | Einzelkarten, gegradete Karten (PSA/BGS/CGC), Sealed, Zubehör | Antwort Shop-Betreiber |
 | Kartensprachen | Deutsch, Englisch, Japanisch, Chinesisch (vereinfacht) | Antwort Shop-Betreiber |
 | Kartenzustand  | Cardmarket-Skala (MT bis PO), Vorauswahl Near Mint | Bekannt bei deutschen Sammlern; Bestand ist überwiegend NM |
 | Seltenheit     | Freitext statt fester Liste | Seltenheiten unterscheiden sich je Spiel und ändern sich mit jeder Ära |
+| Sealed-Kategorien | Feste, spielübergreifende Liste in `vocabulary.ts` (Display, Booster, Booster-Bundle, Elite Trainer Box, Tin, Blister, Kollektion/Box, Deck, Sonstiges); Pflicht beim Anlegen und Bearbeiten von Sealed-Produkten; ältere ohne Kategorie bleiben gültig und werden im Admin markiert | Neue Kategorie = eine Zeile; kein `if (game …)` – nicht jedes Spiel nutzt jede Kategorie |
+| Interne Bestandsdaten | SKU (eindeutig, Großbuchstaben), EK in Cent, Lagerplatz – je Angebot, alle optional, in eigener Collection `offerInternals` (gleiche ID wie das Angebot); nur Admin-Seiten lesen sie (`getOfferInternals`) | Shop, Cache und Warenkorb lesen nur `offers` – EK und Lagerplatz können so nie versehentlich an Kunden gehen |
 | Produktpflege  | Admin-Bereich im Shop | Antwort Shop-Betreiber |
 | Admin-Login    | Google-Anmeldung (Firebase Auth) → httpOnly-Session-Cookie `__session` (5 Tage); Admins = verifizierte E-Mails aus `ADMIN_EMAILS` | Keine eigenen Passwörter; Abmelden widerruft alle Sessions; Rechte werden bei jeder Anfrage neu geprüft |
 | Warenkorb      | httpOnly-Cookie `cart` (nur Angebots-IDs + Mengen, max. 50 Positionen, 30 Tage); Preise/Bestand immer frisch vom Server | Keine DB-Schreibzugriffe für Besucher/Bots; manipulierte Cookies können keine Preise ändern; technisch notwendig → kein Cookie-Banner nötig |
@@ -251,7 +269,10 @@ Nur eintragen, was **tatsächlich entschieden** ist.
 | Stripe         | Konto vorhanden; Schlüssel nur im Secret Manager | Antwort Shop-Betreiber |
 | Versand        | Immer versichert, nur **DE** und **NL**. 5-kg-Paket, versichert bis 500 €: **DE 7,69 €**, **NL 17,49 €** | Antwort Shop-Betreiber; Preise zentral in `src/modules/shipping/` |
 | Bestellwert    | **Max. 500,00 € Warenwert pro Bestellung** (Versand nicht eingerechnet); Prüfung verbindlich in `buildOrder`, Hinweis im Warenkorb | Versicherungsgrenze des Pakets; Entscheidung Shop-Betreiber statt Höherversicherung. Einzelartikel über 500 € sind damit nicht bestellbar |
-| Bestellablauf  | Bestellung = Schnappschuss (Namen, Preise); beim Absenden wird der **Bestand in derselben Transaktion reserviert**; Zahlung bestätigt → `paid`, Abbruch/Ablauf → `cancelled` + Bestand zurück (jeweils idempotent) | Kein Überverkauf, auch bei gleichzeitigen Käufen (Integrationstest); doppelte Stripe-Webhooks sind harmlos |
+| Bestellablauf  | Bestellung = Schnappschuss (Namen, Preise); beim Absenden wird der **Bestand in derselben Transaktion reserviert**; Zahlung bestätigt → `paid`, Abbruch/Ablauf → `cancelled` + Bestand zurück, gepackt → `shipped` (nur aus `paid`; jeweils idempotent). Stornieren nur vor der Zahlung | Kein Überverkauf, auch bei gleichzeitigen Käufen (Integrationstest); doppelte Stripe-Webhooks sind harmlos |
+| Kasse          | `/kasse` (Adresse) → `/kasse/uebersicht` (Bestellübersicht mit „Zahlungspflichtig bestellen“, § 312j BGB) → `/kasse/danke`. Adresse liegt bis zur Bestellung im httpOnly-Cookie `checkout` (24 h, danach/bei Bestellung gelöscht); Honeypot im Adressformular. Die Übersicht rechnet mit `buildOrder`; beim Bestellen wird die **angezeigte Gesamtsumme serverseitig verglichen** | Keine DB-Schreibzugriffe vor der Bestellung; Kunde zahlt genau, was er gesehen hat (Preisänderung, veraltete Übersicht durch Next-Activity) |
+| Bestellen ohne Stripe | Bestellungen werden nur angelegt, wenn `ORDERING_ENABLED=true` (nur `.env.development`). Live ist die Kasse sichtbar, der Button aber gesperrt (Schalter in `src/modules/orders/ordering-switch.ts`, Server Action prüft selbst) | Entscheidung Shop-Betreiber: live keine Bestellungen, die ohne Zahlung Bestand blockieren. Schalter mit der Stripe-Anbindung entfernen |
+| Lagerplatz     | Freitext **pro Angebot** (z. B. „Ordner 3 / S. 12“) in den internen Bestandsdaten. Die Admin-Packliste (`/admin/bestellungen/[id]`) liest ihn beim Öffnen frisch und sortiert danach; er wird **nicht** in die Bestellung kopiert | Antwort Shop-Betreiber; gleiche Karte kann je Zustand/Sprache woanders liegen; umgelagerte Ware wird am aktuellen Platz gesucht |
 | Auth-Domains   | Live-Domain von App Hosting ist in Firebase Auth als autorisierte Domain eingetragen | Sonst schließt sich das Google-Anmeldefenster sofort (`auth/unauthorized-domain`); bei eigener Domain diese ebenfalls eintragen |
 | Firestore-Deploy | Claude darf Firestore-Rules und -Indexe selbst in die Produktion deployen – immer vom Stand auf `main` | Freigabe Shop-Betreiber; Code-Rollout läuft ohnehin automatisch über App Hosting |
 | Admin-Liste    | Produktion: Secret `adminEmails` im Secret Manager (nicht im öffentlichen Repo); lokal: `admin@example.com` | Ändern: `npx firebase apphosting:secrets:set adminEmails --project prod` |

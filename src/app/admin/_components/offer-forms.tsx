@@ -6,8 +6,11 @@ import {
   CARD_LANGUAGES,
   DEFAULT_CARD_CONDITION,
   GRADING_COMPANIES,
+  MAX_SKU_LENGTH,
+  MAX_STORAGE_LOCATION_LENGTH,
   describeOffer,
   type Offer,
+  type OfferInternals,
   type ProductKind,
 } from "@/modules/catalog";
 import { centsToEuroInput, formatEuro } from "@/shared/money";
@@ -69,6 +72,7 @@ export function OfferForm({ productId, productKind }: { productId: string; produ
       <Field label="Bestand">
         <input name="stock" required type="number" min={0} step={1} defaultValue={1} className={inputClass} />
       </Field>
+      <InternalsFields />
       <div className="flex flex-wrap items-center gap-3 sm:col-span-3">
         <SubmitButton pending={pending}>Angebot anlegen</SubmitButton>
         <FormMessage state={state} />
@@ -77,8 +81,8 @@ export function OfferForm({ productId, productKind }: { productId: string; produ
   );
 }
 
-/** One row per offer: price and stock can be changed in place. */
-export function OfferRow({ offer }: { offer: Offer }) {
+/** One row per offer: price, stock and internal data can be changed in place. */
+export function OfferRow({ offer, internals = {} }: { offer: Offer; internals?: OfferInternals }) {
   const { state, pending, onSubmit } = useAdminForm(updateOffer.bind(null, offer.productId, offer.id), {
     resetOnSuccess: false,
   });
@@ -91,6 +95,7 @@ export function OfferRow({ offer }: { offer: Offer }) {
           aktuell {formatEuro(offer.priceCents)} · {offer.stock} auf Lager
         </span>
       </div>
+      <InternalsFields internals={internals} compact />
       <Field label="Preis in €">
         <input name="price" required inputMode="decimal" defaultValue={centsToEuroInput(offer.priceCents)} className={`${inputClass} w-28`} />
       </Field>
@@ -104,6 +109,30 @@ export function OfferRow({ offer }: { offer: Offer }) {
       />
       <FormMessage state={state} />
     </form>
+  );
+}
+
+/** Internal only – the shop never shows these. */
+function InternalsFields({ internals = {}, compact = false }: { internals?: OfferInternals; compact?: boolean }) {
+  const width = compact ? "w-32" : "";
+  return (
+    <>
+      <Field label="SKU (intern)">
+        <input name="sku" maxLength={MAX_SKU_LENGTH} defaultValue={internals.sku} placeholder="z. B. PKM-MEW-199-DE" className={`${inputClass} ${width} uppercase`} />
+      </Field>
+      <Field label="EK in € (intern)">
+        <input
+          name="purchasePrice"
+          inputMode="decimal"
+          defaultValue={internals.purchasePriceCents === undefined ? undefined : centsToEuroInput(internals.purchasePriceCents)}
+          placeholder="z. B. 24,50"
+          className={`${inputClass} ${compact ? "w-28" : ""}`}
+        />
+      </Field>
+      <Field label="Lagerplatz (intern)">
+        <input name="storageLocation" maxLength={MAX_STORAGE_LOCATION_LENGTH} defaultValue={internals.storageLocation} placeholder="z. B. Regal A3" className={`${inputClass} ${width}`} />
+      </Field>
+    </>
   );
 }
 

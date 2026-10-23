@@ -2,6 +2,7 @@ import { optionalText, text, validateForm, type FormFields, type FormResult } fr
 import { parseEuroToCents } from "@/shared/money";
 import { cardSetSchema, gameSchema, type CardSet, type Game } from "./game";
 import { offerSchema, type Offer } from "./offer";
+import { offerInternalsSchema, type OfferInternals } from "./offer-internals";
 import { productSchema, type Product, type ProductKind } from "./product";
 import { toSlug } from "./slug";
 
@@ -29,6 +30,10 @@ const FIELD_LABELS: Record<string, string> = {
   certNumber: "Zertifikatsnummer",
   priceCents: "Preis",
   stock: "Bestand",
+  category: "Kategorie",
+  sku: "SKU",
+  purchasePriceCents: "EK",
+  storageLocation: "Lagerplatz",
 };
 
 export function parseGameForm(fields: FormFields): FormResult<Game> {
@@ -58,8 +63,13 @@ export function parseProductForm(fields: FormFields, id: string): FormResult<Pro
   const candidate =
     kind === "single"
       ? { ...common, slug: toSlug(`${name} ${collectorNumber}`), collectorNumber, rarity: text(fields.rarity) }
-      : { ...common, slug: toSlug(name) };
+      : { ...common, slug: toSlug(name), ...(kind === "sealed" && { category: text(fields.category) }) };
   return validateForm(productSchema, candidate, FIELD_LABELS);
+}
+
+/** Edits an existing product. The kind stays fixed, because its offers were made for that kind. */
+export function parseProductUpdateForm(fields: FormFields, product: Product): FormResult<Product> {
+  return parseProductForm({ ...fields, kind: product.kind }, product.id);
 }
 
 export function parseOfferForm(fields: FormFields, ids: { id: string; productId: string }): FormResult<Offer> {
@@ -84,6 +94,19 @@ export function parseOfferUpdateForm(fields: FormFields, offer: Offer): FormResu
   const priceCents = parseEuroToCents(text(fields.price));
   if (priceCents === null) return { ok: false, error: "Preis: bitte als Euro-Betrag eingeben, z. B. 39,99" };
   return validateForm(offerSchema, { ...offer, priceCents, stock: optionalNumber(fields.stock) }, FIELD_LABELS);
+}
+
+/** SKU, EK and storage location – all optional, because they are often filled in later. */
+export function parseOfferInternalsForm(fields: FormFields): FormResult<OfferInternals> {
+  const purchasePrice = text(fields.purchasePrice);
+  const purchasePriceCents = purchasePrice === "" ? undefined : parseEuroToCents(purchasePrice);
+  if (purchasePriceCents === null) return { ok: false, error: "EK: bitte als Euro-Betrag eingeben, z. B. 24,50" };
+
+  return validateForm(offerInternalsSchema, {
+    sku: optionalText(fields.sku)?.toUpperCase(),
+    purchasePriceCents,
+    storageLocation: optionalText(fields.storageLocation),
+  }, FIELD_LABELS);
 }
 
 // German decimal comma, e.g. grade "9,5".

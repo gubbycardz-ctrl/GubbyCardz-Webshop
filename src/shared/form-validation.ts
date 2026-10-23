@@ -36,3 +36,19 @@ export function text(value: string | undefined) {
 export function optionalText(value: string | undefined) {
   return text(value) || undefined;
 }
+
+/** Collects the text fields of a submitted form (files are ignored). */
+export function formFieldsOf(formData: FormData): FormFields {
+  const fields: FormFields = {};
+  for (const [key, value] of formData) {
+    if (typeof value === "string") fields[key] = value;
+  }
+  return fields;
+}
+
+// A form field people never see, but bots fill in. Public forms reject submissions that contain it.
+export const HONEYPOT_FIELD = "website";
+
+export function isHoneypotFilled(fields: FormFields) {
+  return text(fields[HONEYPOT_FIELD]) !== "";
+}

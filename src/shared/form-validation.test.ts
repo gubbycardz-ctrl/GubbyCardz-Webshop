@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { validateForm } from "./form-validation";
+import { formFieldsOf, isHoneypotFilled, validateForm } from "./form-validation";
 
 const schema = z.object({ name: z.string().min(1), slug: z.string().regex(/^[a-z]+$/), amount: z.int() });
 const labels = { name: "Name", slug: "Name", amount: "Menge" };
@@ -22,5 +22,22 @@ describe("validateForm", () => {
     expect(result.ok).toBe(false);
     expect(!result.ok && result.error).toMatch(/^Menge: /);
     expect(!result.ok && result.error).not.toContain("ausfüllen");
+  });
+});
+
+describe("formFieldsOf", () => {
+  it("keeps text fields and ignores files", () => {
+    const formData = new FormData();
+    formData.set("name", "Max");
+    formData.set("upload", new Blob(["x"]));
+    expect(formFieldsOf(formData)).toEqual({ name: "Max" });
+  });
+});
+
+describe("isHoneypotFilled", () => {
+  it("detects bots that fill the hidden field", () => {
+    expect(isHoneypotFilled({ website: "https://spam.example" })).toBe(true);
+    expect(isHoneypotFilled({ website: " " })).toBe(false);
+    expect(isHoneypotFilled({})).toBe(false);
   });
 });
