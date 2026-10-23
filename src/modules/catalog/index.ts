@@ -9,7 +9,14 @@ export {
 export { gameSchema, cardSetSchema, slugSchema, type Game, type CardSet } from "./game";
 export { productSchema, type Product, type ProductKind } from "./product";
 export { offerSchema, isOfferTypeAllowedFor, type Offer, type OfferType } from "./offer";
-export { offerInternalsSchema, MAX_SKU_LENGTH, MAX_STORAGE_LOCATION_LENGTH, type OfferInternals } from "./offer-internals";
+export {
+  offerInternalsSchema,
+  MAX_SKU_LENGTH,
+  MAX_STORAGE_LOCATION_LENGTH,
+  PURCHASE_ORIGINS,
+  type OfferInternals,
+  type PurchaseOrigin,
+} from "./offer-internals";
 export { PRODUCT_KIND_LABELS, describeOffer, describeProductKind } from "./labels";
 export {
   parseCardSetForm,

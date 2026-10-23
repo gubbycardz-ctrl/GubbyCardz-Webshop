@@ -1,7 +1,7 @@
 import { deleteApp, initializeApp, type App } from "firebase-admin/app";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { CatalogError, type CatalogRepository, type Offer, type Product } from ".";
+import { CatalogError, type CatalogRepository, type Offer, type OfferInternals, type Product } from ".";
 import { createFirestoreCatalogRepository } from "./firestore-catalog-repository";
 
 const PROJECT_ID = "demo-gubbycardz";
@@ -208,12 +208,13 @@ describe("offers", () => {
   });
 
   it("stores internals apart from the offer, so shop reads never contain them", async () => {
-    const internals = { sku: "PKM-MEW-199-DE", purchasePriceCents: 2450, storageLocation: "Regal A3" };
-    await repository.saveOffer(nearMintOffer, internals);
+    const offer: Offer = { ...nearMintOffer, taxScheme: "margin" };
+    const internals: OfferInternals = { sku: "PKM-MEW-199-DE", purchasePriceCents: 2450, origin: "private", storageLocation: "Regal A3" };
+    await repository.saveOffer(offer, internals);
 
-    expect(await repository.getOffersByIds([nearMintOffer.id])).toEqual([nearMintOffer]);
-    expect(await repository.listOffers(charizard.id)).toEqual([nearMintOffer]);
-    expect(await repository.getOfferInternals([nearMintOffer.id, "missing"])).toEqual(new Map([[nearMintOffer.id, internals]]));
+    expect(await repository.getOffersByIds([offer.id])).toEqual([offer]);
+    expect(await repository.listOffers(charizard.id)).toEqual([offer]);
+    expect(await repository.getOfferInternals([offer.id, "missing"])).toEqual(new Map([[offer.id, internals]]));
   });
 
   it("keeps internals when an offer is saved without them, and clears fields left empty", async () => {

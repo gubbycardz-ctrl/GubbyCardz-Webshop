@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TAX_SCHEMES } from "@/modules/pricing";
 import type { ProductKind } from "./product";
 import {
   CARD_CONDITIONS,
@@ -18,6 +19,8 @@ const offerBase = z.object({
   productId: z.string().min(1),
   priceCents: z.int().positive(),
   stock: z.int().nonnegative(),
+  // Optional, because offers created before it existed have none. Admin forms require it.
+  taxScheme: z.enum(keysOf(TAX_SCHEMES)).optional(),
 });
 
 const rawCardOfferSchema = offerBase.extend({

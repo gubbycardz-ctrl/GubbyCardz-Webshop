@@ -1,3 +1,5 @@
+import { z } from "zod";
+import { TAX_SCHEMES } from "@/modules/pricing";
 import { optionalText, text, validateForm, type FormFields, type FormResult } from "@/shared/form-validation";
 import { parseEuroToCents } from "@/shared/money";
 import { cardSetSchema, gameSchema, type CardSet, type Game } from "./game";
@@ -5,6 +7,7 @@ import { offerSchema, type Offer } from "./offer";
 import { offerInternalsSchema, type OfferInternals } from "./offer-internals";
 import { productSchema, type Product, type ProductKind } from "./product";
 import { toSlug } from "./slug";
+import { keysOf } from "./vocabulary";
 
 // Turns raw admin form fields (always strings) into validated catalog entities.
 // Errors come back as German text ready to show next to the form.
@@ -34,7 +37,14 @@ const FIELD_LABELS: Record<string, string> = {
   sku: "SKU",
   purchasePriceCents: "EK",
   storageLocation: "Lagerplatz",
+  taxScheme: "Steuerart",
+  origin: "Herkunft",
 };
+
+// Stored data may lack tax scheme, origin and EK (created before these fields existed), but
+// everything entered from now on must have them: § 25a UStG needs the EK per item.
+const offerFormSchema = offerSchema.and(z.object({ taxScheme: z.enum(keysOf(TAX_SCHEMES)) }));
+const offerInternalsFormSchema = offerInternalsSchema.required({ purchasePriceCents: true, origin: true });
 
 export function parseGameForm(fields: FormFields): FormResult<Game> {
   const name = text(fields.name);
@@ -87,7 +97,7 @@ export function parseOfferForm(fields: FormFields, ids: { id: string; productId:
   const priceCents = parseEuroToCents(text(fields.price));
   if (priceCents === null) return { ok: false, error: "Preis: bitte als Euro-Betrag eingeben, z. B. 39,99" };
 
-  return validateForm(offerSchema, {
+  return validateForm(offerFormSchema, {
     ...ids,
     type: text(fields.type),
     language: optionalText(fields.language),
@@ -97,25 +107,31 @@ export function parseOfferForm(fields: FormFields, ids: { id: string; productId:
     certNumber: optionalText(fields.certNumber),
     priceCents,
     stock: optionalNumber(fields.stock),
+    taxScheme: optionalText(fields.taxScheme),
   }, FIELD_LABELS);
 }
 
-/** Changes only price and stock of an existing offer – the daily business. */
+/** Changes only price, stock and tax scheme of an existing offer – the daily business. */
 export function parseOfferUpdateForm(fields: FormFields, offer: Offer): FormResult<Offer> {
   const priceCents = parseEuroToCents(text(fields.price));
   if (priceCents === null) return { ok: false, error: "Preis: bitte als Euro-Betrag eingeben, z. B. 39,99" };
-  return validateForm(offerSchema, { ...offer, priceCents, stock: optionalNumber(fields.stock) }, FIELD_LABELS);
+  return validateForm(
+    offerFormSchema,
+    { ...offer, priceCents, stock: optionalNumber(fields.stock), taxScheme: optionalText(fields.taxScheme) },
+    FIELD_LABELS,
+  );
 }
 
-/** SKU, EK and storage location – all optional, because they are often filled in later. */
+/** SKU and storage location are optional (often filled in later); EK and origin are required. */
 export function parseOfferInternalsForm(fields: FormFields): FormResult<OfferInternals> {
   const purchasePrice = text(fields.purchasePrice);
   const purchasePriceCents = purchasePrice === "" ? undefined : parseEuroToCents(purchasePrice);
   if (purchasePriceCents === null) return { ok: false, error: "EK: bitte als Euro-Betrag eingeben, z. B. 24,50" };
 
-  return validateForm(offerInternalsSchema, {
+  return validateForm(offerInternalsFormSchema, {
     sku: optionalText(fields.sku)?.toUpperCase(),
     purchasePriceCents,
+    origin: optionalText(fields.origin),
     storageLocation: optionalText(fields.storageLocation),
   }, FIELD_LABELS);
 }
