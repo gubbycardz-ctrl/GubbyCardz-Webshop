@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { requireAdmin } from "@/modules/auth/server";
+import { getCatalogRepository } from "@/modules/catalog/server";
 import { ORDER_STATUS_LABELS, orderNumber, packingList, type Order } from "@/modules/orders";
 import { getOrderRepository } from "@/modules/orders/server";
 import { SHIPPING_COUNTRIES } from "@/modules/shipping";
@@ -104,8 +105,14 @@ function StatusActions({ order, number }: { order: Order; number: string }) {
   return null;
 }
 
-/** Sorted by storage location, so the items can be picked in one walk. */
-function PackingList({ order }: { order: Order }) {
+/**
+ * Sorted by storage location, so the items can be picked in one walk.
+ * Locations are read fresh from the offer internals: they are not part of the order snapshot,
+ * because the item may have been moved since the purchase.
+ */
+async function PackingList({ order }: { order: Order }) {
+  const internals = await getCatalogRepository().getOfferInternals(order.lines.map((line) => line.offerId));
+  const locations = new Map(order.lines.map((line) => [line.offerId, internals.get(line.offerId)?.storageLocation]));
   return (
     <section>
       <h2 className="text-xl font-semibold">Packliste</h2>
@@ -121,7 +128,7 @@ function PackingList({ order }: { order: Order }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-foreground/10">
-            {packingList(order).map((line) => (
+            {packingList(order, locations).map((line) => (
               <tr key={line.offerId}>
                 <td className="px-4 py-2 font-medium">{line.storageLocation ?? <span className="text-foreground/50">–</span>}</td>
                 <td className="px-4 py-2 text-right font-semibold">{line.quantity}×</td>

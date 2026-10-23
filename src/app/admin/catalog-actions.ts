@@ -7,8 +7,10 @@ import {
   parseCardSetForm,
   parseGameForm,
   parseOfferForm,
+  parseOfferInternalsForm,
   parseOfferUpdateForm,
   parseProductForm,
+  parseProductUpdateForm,
   type FormResult,
 } from "@/modules/catalog";
 import { CATALOG_CACHE_TAG, getCatalogRepository } from "@/modules/catalog/server";
@@ -36,11 +38,23 @@ export async function createProduct(_: FormState, formData: FormData): Promise<F
   return state;
 }
 
+export async function updateProduct(productId: string, _: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+  if (!isId(productId)) return { error: "Produkt nicht gefunden." };
+  const repository = getCatalogRepository();
+  const product = await repository.getProductById(productId);
+  if (!product) return { error: "Produkt nicht gefunden." };
+  return save(parseProductUpdateForm(formFieldsOf(formData), product), (updated) => repository.saveProduct(updated), "Gespeichert.");
+}
+
 export async function createOffer(productId: string, _: FormState, formData: FormData): Promise<FormState> {
   await requireAdmin();
   if (!isId(productId)) return { error: "Produkt nicht gefunden." };
-  const parsed = parseOfferForm(formFieldsOf(formData), { id: crypto.randomUUID(), productId });
-  return save(parsed, (offer) => getCatalogRepository().saveOffer(offer), "Angebot angelegt.");
+  const fields = formFieldsOf(formData);
+  const internals = parseOfferInternalsForm(fields);
+  if (!internals.ok) return { error: internals.error };
+  const parsed = parseOfferForm(fields, { id: crypto.randomUUID(), productId });
+  return save(parsed, (offer) => getCatalogRepository().saveOffer(offer, internals.value), "Angebot angelegt.");
 }
 
 export async function updateOffer(productId: string, offerId: string, _: FormState, formData: FormData): Promise<FormState> {
@@ -49,7 +63,10 @@ export async function updateOffer(productId: string, offerId: string, _: FormSta
   const repository = getCatalogRepository();
   const offer = (await repository.listOffers(productId)).find((candidate) => candidate.id === offerId);
   if (!offer) return { error: "Angebot nicht gefunden." };
-  return save(parseOfferUpdateForm(formFieldsOf(formData), offer), (updated) => repository.saveOffer(updated), "Gespeichert.");
+  const fields = formFieldsOf(formData);
+  const internals = parseOfferInternalsForm(fields);
+  if (!internals.ok) return { error: internals.error };
+  return save(parseOfferUpdateForm(fields, offer), (updated) => repository.saveOffer(updated, internals.value), "Gespeichert.");
 }
 
 async function save<T>(parsed: FormResult<T>, write: (value: T) => Promise<void>, success: string): Promise<FormState> {

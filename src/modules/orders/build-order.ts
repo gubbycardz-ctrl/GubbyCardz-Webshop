@@ -39,7 +39,6 @@ export function buildOrder(input: { id: string; now: Date; customer: CheckoutCus
         description: describeOffer(offer),
         unitPriceCents: offer.priceCents,
         quantity,
-        storageLocation: offer.storageLocation,
       })),
       subtotalCents: cart.subtotalCents,
       shippingCents,

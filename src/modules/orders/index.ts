@@ -11,5 +11,5 @@ export {
 } from "./order";
 export { checkoutFields, parseCheckoutForm, type CheckoutCustomer } from "./checkout-form";
 export { buildOrder, maxOrderValueMessage, type BuildOrderResult } from "./build-order";
-export { packingList } from "./packing-list";
+export { packingList, type PackingListLine } from "./packing-list";
 export { ORDER_LIST_LIMIT, OrderError, type OrderRepository } from "./order-repository";

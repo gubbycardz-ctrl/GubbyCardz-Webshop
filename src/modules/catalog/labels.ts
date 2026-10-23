@@ -1,12 +1,19 @@
 import type { Offer } from "./offer";
-import type { ProductKind } from "./product";
-import { CARD_CONDITIONS, CARD_LANGUAGES, GRADING_COMPANIES } from "./vocabulary";
+import type { Product, ProductKind } from "./product";
+import { CARD_CONDITIONS, CARD_LANGUAGES, GRADING_COMPANIES, SEALED_CATEGORIES } from "./vocabulary";
 
 export const PRODUCT_KIND_LABELS: Record<ProductKind, string> = {
   single: "Einzelkarte",
   sealed: "Sealed",
   accessory: "Zubehör",
 };
+
+/** The most specific kind we know, e.g. "Elite Trainer Box" instead of just "Sealed". */
+export function describeProductKind(product: Product): string {
+  return product.kind === "sealed" && product.category
+    ? SEALED_CATEGORIES[product.category]
+    : PRODUCT_KIND_LABELS[product.kind];
+}
 
 /** Human-readable variant of an offer, e.g. "Deutsch · Near Mint (NM)". */
 export function describeOffer(offer: Offer): string {

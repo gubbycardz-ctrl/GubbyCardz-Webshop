@@ -24,8 +24,6 @@ export const orderLineSchema = z.object({
   description: z.string(),
   unitPriceCents: z.int().positive(),
   quantity: z.int().positive(),
-  // Internal, for packing only – never shown to the customer.
-  storageLocation: z.string().optional(),
 });
 
 export const shippingAddressSchema = z.object({

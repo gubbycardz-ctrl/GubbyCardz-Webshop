@@ -34,6 +34,22 @@ export const GRADING_COMPANIES = {
 
 export type GradingCompany = keyof typeof GRADING_COMPANIES;
 
+// Kinds of sealed product, shared by all games. Not every game has every kind
+// (e.g. Elite Trainer Boxes are Pokémon only) – that needs no rule, just no product.
+export const SEALED_CATEGORIES = {
+  display: "Display",
+  booster: "Booster",
+  "booster-bundle": "Booster-Bundle",
+  "elite-trainer-box": "Elite Trainer Box",
+  tin: "Tin",
+  blister: "Blister",
+  collection: "Kollektion / Box",
+  deck: "Deck",
+  other: "Sonstiges",
+} as const;
+
+export type SealedCategory = keyof typeof SEALED_CATEGORIES;
+
 export const MIN_GRADE = 1;
 export const MAX_GRADE = 10;
 

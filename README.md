@@ -21,5 +21,11 @@ Admin-Bereich lokal: http://localhost:3000/admin → „Mit Google anmelden“ �
 ## Prüfen
 
 ```bash
-npm run lint && npm run typecheck && npm run build
+npm run lint && npm run typecheck && npm test && npm run build
+npm run test:integration   # Firestore-Emulator, braucht Java
+npm run test:e2e           # Browser-Tests (Playwright), braucht Java
 ```
+
+Einmalig für Browser-Tests: `npx playwright install chromium`.
+
+Dieselben Prüfungen laufen automatisch bei jedem Pull Request (GitHub Actions, `.github/workflows/ci.yml`).

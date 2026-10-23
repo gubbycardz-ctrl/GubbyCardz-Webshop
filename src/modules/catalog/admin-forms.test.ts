@@ -3,10 +3,13 @@ import {
   parseCardSetForm,
   parseGameForm,
   parseOfferForm,
+  parseOfferInternalsForm,
   parseOfferUpdateForm,
   parseProductForm,
+  parseProductUpdateForm,
 } from "./admin-forms";
 import type { Offer } from "./offer";
+import type { Product } from "./product";
 
 describe("parseGameForm", () => {
   it("derives the id from the name", () => {
@@ -55,8 +58,57 @@ describe("parseProductForm", () => {
     expect(result).toEqual({ ok: true, value: { id: "p2", kind: "accessory", name: "Sleeves schwarz", slug: "sleeves-schwarz" } });
   });
 
+  it("builds sealed products with their category", () => {
+    const result = parseProductForm(
+      { kind: "sealed", category: "elite-trainer-box", name: "151 Elite Trainer Box", gameId: "pokemon", setId: "pokemon-mew" },
+      "p4",
+    );
+    expect(result).toEqual({
+      ok: true,
+      value: { id: "p4", kind: "sealed", category: "elite-trainer-box", name: "151 Elite Trainer Box", slug: "151-elite-trainer-box", gameId: "pokemon", setId: "pokemon-mew" },
+    });
+  });
+
+  it("requires a known category for new sealed products", () => {
+    expect(parseProductForm({ kind: "sealed", name: "Display OP-05", gameId: "one-piece" }, "p5")).toEqual({
+      ok: false,
+      error: "Kategorie: bitte ausfüllen",
+    });
+    expect(parseProductForm({ kind: "sealed", category: "mystery", name: "Display OP-05", gameId: "one-piece" }, "p5").ok).toBe(false);
+  });
+
   it("rejects unknown kinds", () => {
     expect(parseProductForm({ kind: "mystery", name: "X" }, "p3").ok).toBe(false);
+  });
+});
+
+describe("parseProductUpdateForm", () => {
+  const product: Product = {
+    id: "p1", kind: "single", name: "Glurak xe", slug: "glurak-xe-199-165", gameId: "pokemon", setId: "pokemon-mew", collectorNumber: "199/165", rarity: "SIR",
+  };
+
+  it("fixes a typo and moves the slug along with the name", () => {
+    const result = parseProductUpdateForm(
+      { kind: "single", name: "Glurak ex", gameId: "pokemon", setId: "pokemon-mew", collectorNumber: "199/165", rarity: "SIR" },
+      product,
+    );
+    expect(result).toEqual({ ok: true, value: { ...product, name: "Glurak ex", slug: "glurak-ex-199-165" } });
+  });
+
+  it("keeps id and kind, whatever the form sends", () => {
+    const display: Product = { id: "p2", kind: "sealed", category: "display", name: "Display", slug: "display", gameId: "pokemon" };
+    const result = parseProductUpdateForm({ id: "other", kind: "single", category: "display", name: "151 Display", gameId: "pokemon", setId: "" }, display);
+    expect(result).toEqual({ ok: true, value: { ...display, name: "151 Display", slug: "151-display" } });
+  });
+
+  it("asks for a category when editing a sealed product created before categories existed", () => {
+    const legacyDisplay: Product = { id: "p3", kind: "sealed", name: "Display OP-05", slug: "display-op-05", gameId: "one-piece" };
+    const fields = { name: "Display OP-05", gameId: "one-piece", setId: "" };
+    expect(parseProductUpdateForm(fields, legacyDisplay)).toEqual({ ok: false, error: "Kategorie: bitte ausfüllen" });
+    expect(parseProductUpdateForm({ ...fields, category: "display" }, legacyDisplay)).toEqual({
+      ok: true,
+      value: { ...legacyDisplay, category: "display" },
+    });
   });
 });
 
@@ -74,11 +126,6 @@ describe("parseOfferForm", () => {
     });
   });
 
-  it("keeps an optional storage location", () => {
-    const result = parseOfferForm({ type: "accessory", price: "8,99", stock: "20", storageLocation: "Regal A2" }, ids);
-    expect(result.ok && result.value.storageLocation).toBe("Regal A2");
-  });
-
   it("rejects prices that are not clear euro amounts", () => {
     const result = parseOfferForm({ type: "accessory", price: "39,999", stock: "1" }, ids);
     expect(result).toEqual({ ok: false, error: "Preis: bitte als Euro-Betrag eingeben, z. B. 39,99" });
@@ -93,16 +140,29 @@ describe("parseOfferForm", () => {
 describe("parseOfferUpdateForm", () => {
   const offer: Offer = { id: "o1", productId: "p1", type: "raw-card", language: "de", condition: "near-mint", priceCents: 3999, stock: 2 };
 
-  it("changes only price, stock and storage location", () => {
-    expect(parseOfferUpdateForm({ price: "34,50", stock: "0", condition: "poor", storageLocation: " Ordner 3 " }, offer)).toEqual({
+  it("changes only price and stock", () => {
+    expect(parseOfferUpdateForm({ price: "34,50", stock: "0", condition: "poor" }, offer)).toEqual({
       ok: true,
-      value: { ...offer, priceCents: 3450, stock: 0, storageLocation: "Ordner 3" },
+      value: { ...offer, priceCents: 3450, stock: 0 },
+    });
+  });
+});
+
+describe("parseOfferInternalsForm", () => {
+  it("parses SKU in upper case, EK in cents and the storage location", () => {
+    expect(parseOfferInternalsForm({ sku: " pkm-mew-199-de ", purchasePrice: "1.024,50", storageLocation: " Regal A3 " })).toEqual({
+      ok: true,
+      value: { sku: "PKM-MEW-199-DE", purchasePriceCents: 102450, storageLocation: "Regal A3" },
     });
   });
 
-  it("clears the storage location when the field is emptied", () => {
-    const stored: Offer = { ...offer, storageLocation: "Ordner 3" };
-    const result = parseOfferUpdateForm({ price: "39,99", stock: "2", storageLocation: "" }, stored);
-    expect(result.ok && result.value.storageLocation).toBeUndefined();
+  it("treats empty fields as not set and allows an EK of zero", () => {
+    expect(parseOfferInternalsForm({ sku: "", purchasePrice: " ", storageLocation: "" })).toEqual({ ok: true, value: {} });
+    expect(parseOfferInternalsForm({ purchasePrice: "0" })).toEqual({ ok: true, value: { purchasePriceCents: 0 } });
+  });
+
+  it("rejects unclear EK amounts and SKUs with spaces", () => {
+    expect(parseOfferInternalsForm({ purchasePrice: "24,555" })).toEqual({ ok: false, error: "EK: bitte als Euro-Betrag eingeben, z. B. 24,50" });
+    expect(parseOfferInternalsForm({ sku: "PKM 199" })).toEqual({ ok: false, error: "SKU: Nur Großbuchstaben, Ziffern und . _ / -" });
   });
 });

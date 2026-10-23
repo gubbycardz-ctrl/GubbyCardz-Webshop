@@ -40,12 +40,6 @@ describe("buildOrder", () => {
     expect(result.ok && orderSchema.safeParse(result.order).success).toBe(true);
   });
 
-  it("copies the storage location for packing", () => {
-    const stored: PricedCart = { ...cart, lines: [{ ...cart.lines[0], offer: { ...offer, storageLocation: "Ordner 3 / S. 12" } }] };
-    const result = buildOrder({ id: "order-1", now, customer, cart: stored });
-    expect(result.ok && result.order.lines[0].storageLocation).toBe("Ordner 3 / S. 12");
-  });
-
   it("charges Dutch shipping for Dutch addresses", () => {
     const dutch = { ...customer, shippingAddress: { ...customer.shippingAddress, country: "NL" as const, postalCode: "1012 AB" } };
     const result = buildOrder({ id: "order-2", now, customer: dutch, cart });

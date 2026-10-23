@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { describeOffer, PRODUCT_KIND_LABELS } from "@/modules/catalog";
+import { describeOffer, describeProductKind } from "@/modules/catalog";
 import type { PricedCartLine } from "@/modules/cart";
 import { getPricedCart } from "@/modules/cart/server";
 import { maxOrderValueMessage } from "@/modules/orders";
@@ -85,7 +85,7 @@ function CartLineItem({ line }: { line: PricedCartLine }) {
           {product.name}
         </Link>
         <span className="block text-sm text-foreground/60">
-          {PRODUCT_KIND_LABELS[product.kind]} · {describeOffer(offer)} · {formatEuro(offer.priceCents)} pro Stück
+          {describeProductKind(product)} · {describeOffer(offer)} · {formatEuro(offer.priceCents)} pro Stück
         </span>
         {line.issue === "reduced" && (
           <span className="block text-sm text-brand-red">Nur noch {offer.stock} auf Lager – Menge angepasst.</span>
