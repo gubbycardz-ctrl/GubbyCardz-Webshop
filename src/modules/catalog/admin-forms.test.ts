@@ -32,7 +32,7 @@ describe("parseCardSetForm", () => {
 });
 
 describe("parseProductForm", () => {
-  const createdAt = new Date("2026-10-23T12:00:00.000Z");
+  const createdAt = "2026-10-23T12:00:00.000Z";
 
   it("builds a single card with the number in its slug", () => {
     const result = parseProductForm(
@@ -59,6 +59,11 @@ describe("parseProductForm", () => {
 
   it("rejects unknown kinds", () => {
     expect(parseProductForm({ kind: "mystery", name: "X" }, { id: "p3", createdAt }).ok).toBe(false);
+  });
+
+  it("leaves out a missing creation date, as on products created before the field existed", () => {
+    const result = parseProductForm({ kind: "accessory", name: "Sleeves schwarz" }, { id: "p4" });
+    expect(result).toEqual({ ok: true, value: { id: "p4", kind: "accessory", name: "Sleeves schwarz", slug: "sleeves-schwarz" } });
   });
 });
 

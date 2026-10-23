@@ -48,9 +48,10 @@ export function parseCardSetForm(fields: FormFields): FormResult<CardSet> {
   }, FIELD_LABELS);
 }
 
+/** `createdAt` is passed in rather than read from the clock, so edits can keep the original value. */
 export function parseProductForm(
   fields: FormFields,
-  { id, createdAt }: { id: string; createdAt: Date },
+  { id, createdAt }: { id: string; createdAt?: string },
 ): FormResult<Product> {
   const kind = text(fields.kind) as ProductKind;
   const name = text(fields.name);
@@ -61,7 +62,7 @@ export function parseProductForm(
     name,
     gameId: optionalText(fields.gameId),
     setId: optionalText(fields.setId),
-    createdAt: createdAt.toISOString(),
+    createdAt,
   };
 
   // Singles get their number into the URL, because many cards share a name.
