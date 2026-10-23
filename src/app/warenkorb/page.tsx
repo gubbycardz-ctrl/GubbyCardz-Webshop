@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { describeOffer, PRODUCT_KIND_LABELS } from "@/modules/catalog";
+import { describeOffer, describeProductKind } from "@/modules/catalog";
 import type { PricedCartLine } from "@/modules/cart";
 import { getPricedCart } from "@/modules/cart/server";
 import { maxOrderValueMessage } from "@/modules/orders";
@@ -60,19 +60,17 @@ async function CartContents() {
           <span className="font-semibold">{formatEuro(cart.subtotalCents)}</span>
         </p>
         <PriceNote />
-        {exceedsMaxOrderValue(cart.subtotalCents) && (
+        {exceedsMaxOrderValue(cart.subtotalCents) ? (
           <p role="alert" className="max-w-md text-right text-sm text-brand-red">
             {maxOrderValueMessage()}
           </p>
+        ) : (
+          cart.lines.length > 0 && (
+            <Link href="/kasse" className="mt-3 rounded-lg bg-brand-blue px-5 py-2.5 font-medium text-white hover:opacity-90">
+              Zur Kasse
+            </Link>
+          )
         )}
-        <button
-          type="button"
-          disabled
-          title="Die Kasse folgt in Kürze"
-          className="mt-3 rounded-lg bg-brand-blue px-5 py-2.5 font-medium text-white opacity-50"
-        >
-          Zur Kasse (folgt in Kürze)
-        </button>
       </div>
     </>
   );
@@ -87,7 +85,7 @@ function CartLineItem({ line }: { line: PricedCartLine }) {
           {product.name}
         </Link>
         <span className="block text-sm text-foreground/60">
-          {PRODUCT_KIND_LABELS[product.kind]} · {describeOffer(offer)} · {formatEuro(offer.priceCents)} pro Stück
+          {describeProductKind(product)} · {describeOffer(offer)} · {formatEuro(offer.priceCents)} pro Stück
         </span>
         {line.issue === "reduced" && (
           <span className="block text-sm text-brand-red">Nur noch {offer.stock} auf Lager – Menge angepasst.</span>

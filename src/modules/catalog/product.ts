@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { slugSchema } from "./game";
+import { SEALED_CATEGORIES, keysOf } from "./vocabulary";
 
 // A product is *what* exists (e.g. "Charizard ex 199/165"). Price, stock,
 // condition and language belong to the offers for that product.
@@ -26,6 +27,8 @@ const sealedProductSchema = productBase.extend({
   gameId: slugSchema,
   // Optional because some sealed products (e.g. collection boxes) span several sets.
   setId: z.string().min(1).optional(),
+  // Optional only for products created before categories existed; new ones require it (admin form).
+  category: z.enum(keysOf(SEALED_CATEGORIES)).optional(),
 });
 
 const accessorySchema = productBase.extend({

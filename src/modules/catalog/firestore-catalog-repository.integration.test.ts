@@ -89,6 +89,14 @@ describe("products", () => {
     expect(await repository.getProductBySlug("unknown")).toBeNull();
   });
 
+  it("reads sealed products saved before categories existed, and stores a category", async () => {
+    await repository.saveProduct(display);
+    expect(await repository.getProductById(display.id)).toEqual(display);
+
+    await repository.saveProduct({ ...display, category: "display" });
+    expect(await repository.getProductById(display.id)).toEqual({ ...display, category: "display" });
+  });
+
   it("stores products without optional fields", async () => {
     await repository.saveProduct({ ...display, setId: undefined } as Product);
 
@@ -188,14 +196,42 @@ describe("offers", () => {
     await expect(repository.getOffersByIds(tooMany)).rejects.toThrow(CatalogError);
   });
 
-  it("deletes a single offer", async () => {
-    await repository.saveOffer(nearMintOffer);
+  it("deletes a single offer together with its internals", async () => {
+    await repository.saveOffer(nearMintOffer, { sku: "PKM-1" });
     await repository.deleteOffer(nearMintOffer.id);
     expect(await repository.listOffers(charizard.id)).toEqual([]);
+    expect(await repository.getOfferInternals([nearMintOffer.id])).toEqual(new Map());
   });
 
   it("rejects offers for unknown products", async () => {
     await expect(repository.saveOffer({ ...nearMintOffer, productId: "missing" })).rejects.toThrow(CatalogError);
+  });
+
+  it("stores internals apart from the offer, so shop reads never contain them", async () => {
+    const internals = { sku: "PKM-MEW-199-DE", purchasePriceCents: 2450, storageLocation: "Regal A3" };
+    await repository.saveOffer(nearMintOffer, internals);
+
+    expect(await repository.getOffersByIds([nearMintOffer.id])).toEqual([nearMintOffer]);
+    expect(await repository.listOffers(charizard.id)).toEqual([nearMintOffer]);
+    expect(await repository.getOfferInternals([nearMintOffer.id, "missing"])).toEqual(new Map([[nearMintOffer.id, internals]]));
+  });
+
+  it("keeps internals when an offer is saved without them, and clears fields left empty", async () => {
+    await repository.saveOffer(nearMintOffer, { sku: "PKM-1", storageLocation: "Regal A3" });
+    await repository.saveOffer({ ...nearMintOffer, stock: 0 });
+    expect(await repository.getOfferInternals([nearMintOffer.id])).toEqual(new Map([[nearMintOffer.id, { sku: "PKM-1", storageLocation: "Regal A3" }]]));
+
+    await repository.saveOffer(nearMintOffer, { sku: "PKM-1" });
+    expect(await repository.getOfferInternals([nearMintOffer.id])).toEqual(new Map([[nearMintOffer.id, { sku: "PKM-1" }]]));
+  });
+
+  it("rejects a SKU that another offer already uses, without writing anything", async () => {
+    await repository.saveOffer(nearMintOffer, { sku: "PKM-1" });
+    await repository.saveOffer(nearMintOffer, { sku: "PKM-1", storageLocation: "Regal B1" });
+
+    const lightPlayed: Offer = { ...nearMintOffer, id: "o-lp", condition: "light-played" };
+    await expect(repository.saveOffer(lightPlayed, { sku: "PKM-1" })).rejects.toThrow(CatalogError);
+    expect(await repository.getOffersByIds([lightPlayed.id])).toEqual([]);
   });
 
   it("rejects offers that do not fit the product kind", async () => {
@@ -221,15 +257,16 @@ describe("deleting", () => {
     await repository.saveGame({ id: "pokemon", name: "Pokémon" });
     await repository.saveCardSet({ id: "sv3pt5", gameId: "pokemon", name: "151", code: "MEW" });
     await repository.saveProduct(charizard);
-    await repository.saveOffer(nearMintOffer);
+    await repository.saveOffer(nearMintOffer, { sku: "PKM-1" });
     await repository.saveOffer({ ...nearMintOffer, id: "o-lp", condition: "light-played" });
   });
 
-  it("deletes a product together with its offers", async () => {
+  it("deletes a product together with its offers and their internals", async () => {
     await repository.deleteProduct(charizard.id);
 
     expect(await repository.getProductById(charizard.id)).toBeNull();
     expect(await repository.getOffersByIds([nearMintOffer.id, "o-lp"])).toEqual([]);
+    expect(await repository.getOfferInternals([nearMintOffer.id])).toEqual(new Map());
   });
 
   it("keeps a set while products still belong to it", async () => {

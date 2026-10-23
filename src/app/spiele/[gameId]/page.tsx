@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { PRODUCT_KIND_LABELS, type Product } from "@/modules/catalog";
+import { describeProductKind, type Product } from "@/modules/catalog";
 import { getGame, getProductsOfGame } from "@/modules/catalog/server";
 
 export async function generateMetadata({ params }: PageProps<"/spiele/[gameId]">): Promise<Metadata> {
@@ -54,7 +54,7 @@ async function GameProducts({ params }: Pick<PageProps<"/spiele/[gameId]">, "par
                   <span className="font-medium">{product.name}</span>
                   <span className="block text-sm text-foreground/60">{productSubtitle(product)}</span>
                 </span>
-                <span className="shrink-0 text-sm text-foreground/60">{PRODUCT_KIND_LABELS[product.kind]}</span>
+                <span className="shrink-0 text-sm text-foreground/60">{describeProductKind(product)}</span>
               </Link>
             </li>
           ))}

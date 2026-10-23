@@ -53,3 +53,8 @@ export function parseCheckoutForm(fields: FormFields): FormResult<CheckoutCustom
   const { email, ...shippingAddress } = result.value;
   return { ok: true, value: { email, shippingAddress } };
 }
+
+/** The customer as flat form fields – to prefill the form and to carry the address through checkout. */
+export function checkoutFields(customer: CheckoutCustomer): FormFields {
+  return { email: customer.email, ...customer.shippingAddress };
+}

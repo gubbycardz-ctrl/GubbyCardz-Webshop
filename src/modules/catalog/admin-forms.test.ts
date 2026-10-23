@@ -3,10 +3,13 @@ import {
   parseCardSetForm,
   parseGameForm,
   parseOfferForm,
+  parseOfferInternalsForm,
   parseOfferUpdateForm,
   parseProductForm,
+  parseProductUpdateForm,
 } from "./admin-forms";
 import type { Offer } from "./offer";
+import type { Product } from "./product";
 
 describe("parseGameForm", () => {
   it("derives the id from the name", () => {
@@ -57,6 +60,25 @@ describe("parseProductForm", () => {
     expect(result).toEqual({ ok: true, value: { id: "p2", kind: "accessory", name: "Sleeves schwarz", slug: "sleeves-schwarz", createdAt: "2026-10-23T12:00:00.000Z" } });
   });
 
+  it("builds sealed products with their category", () => {
+    const result = parseProductForm(
+      { kind: "sealed", category: "elite-trainer-box", name: "151 Elite Trainer Box", gameId: "pokemon", setId: "pokemon-mew" },
+      { id: "p4" },
+    );
+    expect(result).toEqual({
+      ok: true,
+      value: { id: "p4", kind: "sealed", category: "elite-trainer-box", name: "151 Elite Trainer Box", slug: "151-elite-trainer-box", gameId: "pokemon", setId: "pokemon-mew" },
+    });
+  });
+
+  it("requires a known category for new sealed products", () => {
+    expect(parseProductForm({ kind: "sealed", name: "Display OP-05", gameId: "one-piece" }, { id: "p5" })).toEqual({
+      ok: false,
+      error: "Kategorie: bitte ausfüllen",
+    });
+    expect(parseProductForm({ kind: "sealed", category: "mystery", name: "Display OP-05", gameId: "one-piece" }, { id: "p5" }).ok).toBe(false);
+  });
+
   it("rejects unknown kinds", () => {
     expect(parseProductForm({ kind: "mystery", name: "X" }, { id: "p3", createdAt }).ok).toBe(false);
   });
@@ -64,6 +86,42 @@ describe("parseProductForm", () => {
   it("leaves out a missing creation date, as on products created before the field existed", () => {
     const result = parseProductForm({ kind: "accessory", name: "Sleeves schwarz" }, { id: "p4" });
     expect(result).toEqual({ ok: true, value: { id: "p4", kind: "accessory", name: "Sleeves schwarz", slug: "sleeves-schwarz" } });
+  });
+});
+
+describe("parseProductUpdateForm", () => {
+  const product: Product = {
+    id: "p1", kind: "single", name: "Glurak xe", slug: "glurak-xe-199-165", gameId: "pokemon", setId: "pokemon-mew", collectorNumber: "199/165", rarity: "SIR",
+  };
+
+  it("fixes a typo and moves the slug along with the name", () => {
+    const result = parseProductUpdateForm(
+      { kind: "single", name: "Glurak ex", gameId: "pokemon", setId: "pokemon-mew", collectorNumber: "199/165", rarity: "SIR" },
+      product,
+    );
+    expect(result).toEqual({ ok: true, value: { ...product, name: "Glurak ex", slug: "glurak-ex-199-165" } });
+  });
+
+  it("keeps id and kind, whatever the form sends", () => {
+    const display: Product = { id: "p2", kind: "sealed", category: "display", name: "Display", slug: "display", gameId: "pokemon" };
+    const result = parseProductUpdateForm({ id: "other", kind: "single", category: "display", name: "151 Display", gameId: "pokemon", setId: "" }, display);
+    expect(result).toEqual({ ok: true, value: { ...display, name: "151 Display", slug: "151-display" } });
+  });
+
+  it("keeps the creation time, so an edited product stays under 'Neu im Sortiment'", () => {
+    const created: Product = { ...product, createdAt: "2026-10-01T10:00:00.000Z" };
+    const result = parseProductUpdateForm({ name: "Glurak ex", gameId: "pokemon", setId: "pokemon-mew", collectorNumber: "199/165", rarity: "SIR" }, created);
+    expect(result.ok && result.value.createdAt).toBe("2026-10-01T10:00:00.000Z");
+  });
+
+  it("asks for a category when editing a sealed product created before categories existed", () => {
+    const legacyDisplay: Product = { id: "p3", kind: "sealed", name: "Display OP-05", slug: "display-op-05", gameId: "one-piece" };
+    const fields = { name: "Display OP-05", gameId: "one-piece", setId: "" };
+    expect(parseProductUpdateForm(fields, legacyDisplay)).toEqual({ ok: false, error: "Kategorie: bitte ausfüllen" });
+    expect(parseProductUpdateForm({ ...fields, category: "display" }, legacyDisplay)).toEqual({
+      ok: true,
+      value: { ...legacyDisplay, category: "display" },
+    });
   });
 });
 
@@ -100,5 +158,24 @@ describe("parseOfferUpdateForm", () => {
       ok: true,
       value: { ...offer, priceCents: 3450, stock: 0 },
     });
+  });
+});
+
+describe("parseOfferInternalsForm", () => {
+  it("parses SKU in upper case, EK in cents and the storage location", () => {
+    expect(parseOfferInternalsForm({ sku: " pkm-mew-199-de ", purchasePrice: "1.024,50", storageLocation: " Regal A3 " })).toEqual({
+      ok: true,
+      value: { sku: "PKM-MEW-199-DE", purchasePriceCents: 102450, storageLocation: "Regal A3" },
+    });
+  });
+
+  it("treats empty fields as not set and allows an EK of zero", () => {
+    expect(parseOfferInternalsForm({ sku: "", purchasePrice: " ", storageLocation: "" })).toEqual({ ok: true, value: {} });
+    expect(parseOfferInternalsForm({ purchasePrice: "0" })).toEqual({ ok: true, value: { purchasePriceCents: 0 } });
+  });
+
+  it("rejects unclear EK amounts and SKUs with spaces", () => {
+    expect(parseOfferInternalsForm({ purchasePrice: "24,555" })).toEqual({ ok: false, error: "EK: bitte als Euro-Betrag eingeben, z. B. 24,50" });
+    expect(parseOfferInternalsForm({ sku: "PKM 199" })).toEqual({ ok: false, error: "SKU: Nur Großbuchstaben, Ziffern und . _ / -" });
   });
 });

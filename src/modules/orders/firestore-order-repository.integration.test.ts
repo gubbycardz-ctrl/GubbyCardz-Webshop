@@ -142,7 +142,32 @@ describe("payment outcome", () => {
     expect(await stockOf(plenty.id)).toBeUndefined();
   });
 
+  it("ships only paid orders, once", async () => {
+    expect(await orders.markShipped("order-p", new Date())).toBe("unchanged");
+
+    await orders.markPaid("order-p", new Date());
+    expect(await orders.markShipped("order-p", new Date())).toBe("shipped");
+    expect(await orders.markShipped("order-p", new Date())).toBe("unchanged");
+    expect(await orders.cancel("order-p", new Date())).toBe("unchanged");
+
+    expect(await orders.getOrder("order-p")).toMatchObject({ status: "shipped" });
+    expect(await stockOf(plenty.id)).toBe(6);
+  });
+
   it("reports unknown orders", async () => {
     await expect(orders.markPaid("missing", new Date())).rejects.toThrow(OrderError);
+    await expect(orders.markShipped("missing", new Date())).rejects.toThrow(OrderError);
+  });
+});
+
+describe("listOrders", () => {
+  it("lists newest first, optionally by status", async () => {
+    await orders.placeOrder({ ...orderFor("older", [{ offer: plenty, quantity: 1 }]), createdAt: "2026-10-01T10:00:00.000Z" });
+    await orders.placeOrder({ ...orderFor("newer", [{ offer: plenty, quantity: 1 }]), createdAt: "2026-10-02T10:00:00.000Z" });
+    await orders.markPaid("older", new Date());
+
+    expect((await orders.listOrders({})).map((order) => order.id)).toEqual(["newer", "older"]);
+    expect((await orders.listOrders({ status: "paid" })).map((order) => order.id)).toEqual(["older"]);
+    expect(await orders.listOrders({ status: "shipped" })).toEqual([]);
   });
 });

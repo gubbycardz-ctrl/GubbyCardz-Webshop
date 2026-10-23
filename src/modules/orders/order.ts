@@ -5,8 +5,15 @@ import { SHIPPING_COUNTRY_CODES } from "@/modules/shipping";
 // An order is a snapshot: names and prices are copied in, so later catalog
 // changes never alter what the customer bought.
 
-export const ORDER_STATUSES = ["awaiting-payment", "paid", "cancelled"] as const;
+export const ORDER_STATUSES = ["awaiting-payment", "paid", "shipped", "cancelled"] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
+
+export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
+  "awaiting-payment": "Wartet auf Zahlung",
+  paid: "Bezahlt – zu packen",
+  shipped: "Versendet",
+  cancelled: "Storniert",
+};
 
 const cents = z.int().nonnegative();
 
@@ -39,9 +46,17 @@ export const orderSchema = z.object({
   totalCents: cents,
   paymentSessionId: z.string().min(1).optional(),
   paidAt: z.iso.datetime().optional(),
+  shippedAt: z.iso.datetime().optional(),
   cancelledAt: z.iso.datetime().optional(),
 });
 
 export type OrderLine = z.infer<typeof orderLineSchema>;
 export type ShippingAddress = z.infer<typeof shippingAddressSchema>;
 export type Order = z.infer<typeof orderSchema>;
+
+const ORDER_NUMBER_LENGTH = 8;
+
+/** Short number for customers and packing slips; the full id stays the unguessable document id. */
+export function orderNumber(orderId: string): string {
+  return orderId.replaceAll("-", "").slice(0, ORDER_NUMBER_LENGTH).toUpperCase();
+}
