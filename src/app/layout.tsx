@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 import { CartLink, CartLinkFallback } from "./cart-link";
+import { SiteFooter } from "./site-footer";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           </div>
         </header>
         {children}
+        <SiteFooter />
       </body>
     </html>
   );

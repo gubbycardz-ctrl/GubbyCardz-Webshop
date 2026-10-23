@@ -7,6 +7,7 @@ import { priceCart, type PricedCart } from "./priced-cart";
 
 // Technically necessary for the purchase, so no consent banner is needed (TTDSG § 25 Abs. 2).
 const CART_COOKIE = "cart";
+// Cookie name and lifetime are listed in the privacy policy (src/app/(legal)/datenschutz) – keep it in sync.
 const CART_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 
 export async function readCart(): Promise<Cart> {
