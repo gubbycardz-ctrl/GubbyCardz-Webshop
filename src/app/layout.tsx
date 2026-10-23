@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
+import { SITE_URL } from "@/shared/site-url";
 import { CartLink, CartLinkFallback } from "./cart-link";
 import { SiteFooter } from "./site-footer";
 import "./globals.css";
@@ -18,11 +19,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  // Lets pages give canonical and Open Graph URLs as plain paths.
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "GubbyCardz – Trading Cards & Merchandise",
     template: "%s | GubbyCardz",
   },
   description: "Pokémon- und One-Piece-Karten: Einzelkarten, Booster, Displays und Zubehör.",
+  openGraph: {
+    siteName: "GubbyCardz",
+    locale: "de_DE",
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

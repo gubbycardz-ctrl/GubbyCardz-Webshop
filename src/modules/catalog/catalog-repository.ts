@@ -20,6 +20,8 @@ export interface CatalogRepository {
   getProductById(id: string): Promise<Product | null>;
   /** Filter by game or by kind (e.g. all accessories, with or without game), sorted by name. */
   listProducts(query: { gameId?: string; kind?: ProductKind; limit?: number }): Promise<Product[]>;
+  /** Most recently created first; products without `createdAt` are left out. */
+  listNewestProducts(limit: number): Promise<Product[]>;
 
   /**
    * Fails if the product does not exist or does not accept this offer type, or if

@@ -20,6 +20,11 @@ env:
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
     value: gubbycardz-80976
     availability: [ BUILD ]
+  # Public base URL for sitemap.xml, robots.txt and canonical links.
+  # Change here when the shop moves to its own domain.
+  - variable: SITE_URL
+    value: https://gubbycardz-web--gubbycardz-80976.europe-west4.hosted.app
+    availability: [ BUILD, RUNTIME ]
   # Comma-separated admin emails, kept in Cloud Secret Manager instead of this public repo.
   # Change with: npx firebase apphosting:secrets:set adminEmails --project prod
   - variable: ADMIN_EMAILS

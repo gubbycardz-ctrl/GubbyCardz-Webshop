@@ -31,7 +31,7 @@ export async function createCardSet(_: FormState, formData: FormData): Promise<F
 
 export async function createProduct(_: FormState, formData: FormData): Promise<FormState> {
   await requireAdmin();
-  const parsed = parseProductForm(formFieldsOf(formData), crypto.randomUUID());
+  const parsed = parseProductForm(formFieldsOf(formData), { id: crypto.randomUUID(), createdAt: new Date().toISOString() });
   const state = await save(parsed, (product) => getCatalogRepository().saveProduct(product), "");
   // Straight to the new product, where its offers are added.
   if (!state.error && parsed.ok) redirect(`/admin/produkte/${parsed.value.id}`);

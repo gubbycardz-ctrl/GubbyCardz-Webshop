@@ -35,33 +35,35 @@ describe("parseCardSetForm", () => {
 });
 
 describe("parseProductForm", () => {
+  const createdAt = "2026-10-23T12:00:00.000Z";
+
   it("builds a single card with the number in its slug", () => {
     const result = parseProductForm(
       { kind: "single", name: "Glurak ex", gameId: "pokemon", setId: "pokemon-mew", collectorNumber: "199/165", rarity: "SIR" },
-      "p1",
+      { id: "p1", createdAt },
     );
     expect(result).toEqual({
       ok: true,
-      value: { id: "p1", kind: "single", name: "Glurak ex", slug: "glurak-ex-199-165", gameId: "pokemon", setId: "pokemon-mew", collectorNumber: "199/165", rarity: "SIR" },
+      value: { id: "p1", kind: "single", name: "Glurak ex", slug: "glurak-ex-199-165", gameId: "pokemon", setId: "pokemon-mew", collectorNumber: "199/165", rarity: "SIR", createdAt: "2026-10-23T12:00:00.000Z" },
     });
   });
 
   it("requires set, number and rarity for single cards", () => {
-    expect(parseProductForm({ kind: "single", name: "Glurak ex", gameId: "pokemon" }, "p1")).toEqual({
+    expect(parseProductForm({ kind: "single", name: "Glurak ex", gameId: "pokemon" }, { id: "p1", createdAt })).toEqual({
       ok: false,
       error: "Set: bitte ausfüllen · Nummer: bitte ausfüllen · Seltenheit: bitte ausfüllen",
     });
   });
 
   it("builds accessories without game or set", () => {
-    const result = parseProductForm({ kind: "accessory", name: "Sleeves schwarz", gameId: "", setId: "" }, "p2");
-    expect(result).toEqual({ ok: true, value: { id: "p2", kind: "accessory", name: "Sleeves schwarz", slug: "sleeves-schwarz" } });
+    const result = parseProductForm({ kind: "accessory", name: "Sleeves schwarz", gameId: "", setId: "" }, { id: "p2", createdAt });
+    expect(result).toEqual({ ok: true, value: { id: "p2", kind: "accessory", name: "Sleeves schwarz", slug: "sleeves-schwarz", createdAt: "2026-10-23T12:00:00.000Z" } });
   });
 
   it("builds sealed products with their category", () => {
     const result = parseProductForm(
       { kind: "sealed", category: "elite-trainer-box", name: "151 Elite Trainer Box", gameId: "pokemon", setId: "pokemon-mew" },
-      "p4",
+      { id: "p4" },
     );
     expect(result).toEqual({
       ok: true,
@@ -70,15 +72,20 @@ describe("parseProductForm", () => {
   });
 
   it("requires a known category for new sealed products", () => {
-    expect(parseProductForm({ kind: "sealed", name: "Display OP-05", gameId: "one-piece" }, "p5")).toEqual({
+    expect(parseProductForm({ kind: "sealed", name: "Display OP-05", gameId: "one-piece" }, { id: "p5" })).toEqual({
       ok: false,
       error: "Kategorie: bitte ausfüllen",
     });
-    expect(parseProductForm({ kind: "sealed", category: "mystery", name: "Display OP-05", gameId: "one-piece" }, "p5").ok).toBe(false);
+    expect(parseProductForm({ kind: "sealed", category: "mystery", name: "Display OP-05", gameId: "one-piece" }, { id: "p5" }).ok).toBe(false);
   });
 
   it("rejects unknown kinds", () => {
-    expect(parseProductForm({ kind: "mystery", name: "X" }, "p3").ok).toBe(false);
+    expect(parseProductForm({ kind: "mystery", name: "X" }, { id: "p3", createdAt }).ok).toBe(false);
+  });
+
+  it("leaves out a missing creation date, as on products created before the field existed", () => {
+    const result = parseProductForm({ kind: "accessory", name: "Sleeves schwarz" }, { id: "p4" });
+    expect(result).toEqual({ ok: true, value: { id: "p4", kind: "accessory", name: "Sleeves schwarz", slug: "sleeves-schwarz" } });
   });
 });
 
@@ -99,6 +106,12 @@ describe("parseProductUpdateForm", () => {
     const display: Product = { id: "p2", kind: "sealed", category: "display", name: "Display", slug: "display", gameId: "pokemon" };
     const result = parseProductUpdateForm({ id: "other", kind: "single", category: "display", name: "151 Display", gameId: "pokemon", setId: "" }, display);
     expect(result).toEqual({ ok: true, value: { ...display, name: "151 Display", slug: "151-display" } });
+  });
+
+  it("keeps the creation time, so an edited product stays under 'Neu im Sortiment'", () => {
+    const created: Product = { ...product, createdAt: "2026-10-01T10:00:00.000Z" };
+    const result = parseProductUpdateForm({ name: "Glurak ex", gameId: "pokemon", setId: "pokemon-mew", collectorNumber: "199/165", rarity: "SIR" }, created);
+    expect(result.ok && result.value.createdAt).toBe("2026-10-01T10:00:00.000Z");
   });
 
   it("asks for a category when editing a sealed product created before categories existed", () => {

@@ -7,6 +7,8 @@ import { getCatalogRepository } from "./default-repository";
 // re-checks stock in a transaction.
 export const CATALOG_CACHE_TAG = "catalog";
 
+const NEWEST_PRODUCTS_COUNT = 8;
+
 const repository = getCatalogRepository;
 
 export async function getGames() {
@@ -34,6 +36,20 @@ export async function getProductsOfGame(gameId: string) {
   cacheLife("minutes");
   cacheTag(CATALOG_CACHE_TAG);
   return repository().listProducts({ gameId });
+}
+
+export async function getAccessories() {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag(CATALOG_CACHE_TAG);
+  return repository().listProducts({ kind: "accessory" });
+}
+
+export async function getNewestProducts() {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag(CATALOG_CACHE_TAG);
+  return repository().listNewestProducts(NEWEST_PRODUCTS_COUNT);
 }
 
 export async function getProduct(slug: string) {

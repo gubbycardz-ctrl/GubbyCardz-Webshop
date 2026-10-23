@@ -53,11 +53,22 @@ export function parseCardSetForm(fields: FormFields): FormResult<CardSet> {
   }, FIELD_LABELS);
 }
 
-export function parseProductForm(fields: FormFields, id: string): FormResult<Product> {
+/** `createdAt` is passed in rather than read from the clock, so edits can keep the original value. */
+export function parseProductForm(
+  fields: FormFields,
+  { id, createdAt }: { id: string; createdAt?: string },
+): FormResult<Product> {
   const kind = text(fields.kind) as ProductKind;
   const name = text(fields.name);
   const collectorNumber = text(fields.collectorNumber);
-  const common = { id, kind, name, gameId: optionalText(fields.gameId), setId: optionalText(fields.setId) };
+  const common = {
+    id,
+    kind,
+    name,
+    gameId: optionalText(fields.gameId),
+    setId: optionalText(fields.setId),
+    createdAt,
+  };
 
   // Singles get their number into the URL, because many cards share a name.
   const candidate =
@@ -69,7 +80,7 @@ export function parseProductForm(fields: FormFields, id: string): FormResult<Pro
 
 /** Edits an existing product. The kind stays fixed, because its offers were made for that kind. */
 export function parseProductUpdateForm(fields: FormFields, product: Product): FormResult<Product> {
-  return parseProductForm({ ...fields, kind: product.kind }, product.id);
+  return parseProductForm({ ...fields, kind: product.kind }, { id: product.id, createdAt: product.createdAt });
 }
 
 export function parseOfferForm(fields: FormFields, ids: { id: string; productId: string }): FormResult<Offer> {

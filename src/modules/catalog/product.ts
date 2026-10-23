@@ -8,6 +8,9 @@ const productBase = z.object({
   id: z.string().min(1),
   name: z.string().trim().min(1),
   slug: slugSchema,
+  // Optional because products created before this field existed have none;
+  // those simply do not show up under "new".
+  createdAt: z.iso.datetime().optional(),
 });
 
 const singleCardSchema = productBase.extend({

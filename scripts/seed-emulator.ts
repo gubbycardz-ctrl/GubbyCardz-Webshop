@@ -10,6 +10,13 @@ import { createFirestoreCatalogRepository } from "../src/modules/catalog/firesto
 const app = initializeApp({ projectId: "demo-gubbycardz" });
 const catalog = createFirestoreCatalogRepository(getFirestore(app));
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+// Spread over the last days, so the "new" section on the home page has a visible order.
+function daysAgo(days: number) {
+  return new Date(Date.now() - days * MS_PER_DAY).toISOString();
+}
+
 async function seed() {
   await catalog.saveGame({ id: "pokemon", name: "Pokémon" });
   await catalog.saveGame({ id: "one-piece", name: "One Piece" });
@@ -17,13 +24,13 @@ async function seed() {
   await catalog.saveCardSet({ id: "sv3pt5", gameId: "pokemon", name: "Karmesin & Purpur – 151", code: "MEW", releaseDate: "2023-09-22" });
   await catalog.saveCardSet({ id: "op05", gameId: "one-piece", name: "Awakening of the New Era", code: "OP-05", releaseDate: "2023-12-08" });
 
-  await catalog.saveProduct({ id: "glurak-ex-199", kind: "single", name: "Glurak ex", slug: "glurak-ex-199-165", gameId: "pokemon", setId: "sv3pt5", collectorNumber: "199/165", rarity: "Special Illustration Rare" });
-  await catalog.saveProduct({ id: "bisasam-166", kind: "single", name: "Bisasam", slug: "bisasam-166-165", gameId: "pokemon", setId: "sv3pt5", collectorNumber: "166/165", rarity: "Illustration Rare" });
-  await catalog.saveProduct({ id: "mew-151-display", kind: "sealed", category: "booster-bundle", name: "151 Booster Bundle", slug: "151-booster-bundle", gameId: "pokemon", setId: "sv3pt5" });
-  await catalog.saveProduct({ id: "mew-151-etb", kind: "sealed", category: "elite-trainer-box", name: "151 Elite Trainer Box", slug: "151-elite-trainer-box", gameId: "pokemon", setId: "sv3pt5" });
-  await catalog.saveProduct({ id: "luffy-op05-119", kind: "single", name: "Monkey D. Luffy", slug: "monkey-d-luffy-op05-119", gameId: "one-piece", setId: "op05", collectorNumber: "OP05-119", rarity: "Secret Rare" });
-  await catalog.saveProduct({ id: "op05-display", kind: "sealed", category: "display", name: "Display OP-05", slug: "display-op-05", gameId: "one-piece", setId: "op05" });
-  await catalog.saveProduct({ id: "sleeves-black", kind: "accessory", name: "Sleeves schwarz (100 Stück)", slug: "sleeves-schwarz-100" });
+  await catalog.saveProduct({ id: "glurak-ex-199", kind: "single", name: "Glurak ex", slug: "glurak-ex-199-165", gameId: "pokemon", setId: "sv3pt5", collectorNumber: "199/165", rarity: "Special Illustration Rare", createdAt: daysAgo(5) });
+  await catalog.saveProduct({ id: "bisasam-166", kind: "single", name: "Bisasam", slug: "bisasam-166-165", gameId: "pokemon", setId: "sv3pt5", collectorNumber: "166/165", rarity: "Illustration Rare", createdAt: daysAgo(4) });
+  await catalog.saveProduct({ id: "mew-151-display", kind: "sealed", category: "booster-bundle", name: "151 Booster Bundle", slug: "151-booster-bundle", gameId: "pokemon", setId: "sv3pt5", createdAt: daysAgo(1) });
+  await catalog.saveProduct({ id: "mew-151-etb", kind: "sealed", category: "elite-trainer-box", name: "151 Elite Trainer Box", slug: "151-elite-trainer-box", gameId: "pokemon", setId: "sv3pt5", createdAt: daysAgo(6) });
+  await catalog.saveProduct({ id: "luffy-op05-119", kind: "single", name: "Monkey D. Luffy", slug: "monkey-d-luffy-op05-119", gameId: "one-piece", setId: "op05", collectorNumber: "OP05-119", rarity: "Secret Rare", createdAt: daysAgo(3) });
+  await catalog.saveProduct({ id: "op05-display", kind: "sealed", category: "display", name: "Display OP-05", slug: "display-op-05", gameId: "one-piece", setId: "op05", createdAt: daysAgo(0) });
+  await catalog.saveProduct({ id: "sleeves-black", kind: "accessory", name: "Sleeves schwarz (100 Stück)", slug: "sleeves-schwarz-100", createdAt: daysAgo(2) });
 
   await catalog.saveOffer({ id: "glurak-de-nm", productId: "glurak-ex-199", type: "raw-card", language: "de", condition: "near-mint", priceCents: 11999, stock: 2 }, { sku: "PKM-MEW-199-DE-NM", purchasePriceCents: 9000, storageLocation: "Ordner 1 / Seite 3" });
   await catalog.saveOffer({ id: "glurak-en-lp", productId: "glurak-ex-199", type: "raw-card", language: "en", condition: "light-played", priceCents: 8499, stock: 1 });

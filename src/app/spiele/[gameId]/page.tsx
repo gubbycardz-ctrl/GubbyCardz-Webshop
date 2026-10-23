@@ -9,7 +9,11 @@ export async function generateMetadata({ params }: PageProps<"/spiele/[gameId]">
   const { gameId } = await params;
   const game = await getGame(gameId);
   return game
-    ? { title: game.name, description: `${game.name}-Karten, Booster und Zubehör bei GubbyCardz.` }
+    ? {
+        title: game.name,
+        description: `${game.name}-Karten, Booster und Zubehör bei GubbyCardz.`,
+        alternates: { canonical: `/spiele/${game.id}` },
+      }
     : { title: "Spiel nicht gefunden" };
 }
 
