@@ -11,13 +11,20 @@ export function GoogleSignInButton() {
   function handleClick() {
     setError(null);
     startTransition(async () => {
+      let idToken: string;
       try {
-        const idToken = await signInWithGoogle();
+        idToken = await signInWithGoogle();
+      } catch {
+        setError("Anmeldung bei Google abgebrochen oder fehlgeschlagen.");
+        return;
+      }
+      try {
         // On success the action redirects to /admin and never returns.
         const result = await signInAsAdmin(idToken);
         setError(result.error);
       } catch {
-        setError("Anmeldung abgebrochen oder fehlgeschlagen.");
+        // Usually a new shop version went live while this page was open.
+        setError("Der Shop wurde gerade aktualisiert. Bitte lade die Seite neu (Strg+F5) und melde dich erneut an.");
       }
     });
   }
