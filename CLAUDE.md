@@ -186,6 +186,9 @@ Vor jedem Commit müssen `lint`, `typecheck`, `test` und `build` grün sein – 
 - Unbekannte Slugs → `notFound()` (Next setzt `noindex`).
 - **Ungecachte** Datenbank-/Auth-Zugriffe beim Rendern (Warenkorb, Admin, Session) brauchen vorher
   `await connection()` – sonst meldet Next.js im Dev-Modus „unstable value … while prerendering“.
+- Next.js hält bis zu 3 besuchte Routen versteckt vor (`<Activity>`) und zeigt beim Zurückkehren kurz deren alten Stand.
+  Was sich auf Angezeigtes verlässt (z. B. die Bestellsumme), prüft der Server deshalb selbst nach. In E2E-Tests
+  nur sichtbare Elemente abfragen (`getByRole`/`getByLabel` oder `:visible`).
 
 **Admin-Bereich & Auth (`src/modules/auth/`):**
 - Jede Admin-Seite **und jede Admin-Server-Action** ruft zuerst `requireAdmin()` auf – UI-Ausblenden allein schützt nichts.
@@ -251,7 +254,10 @@ Nur eintragen, was **tatsächlich entschieden** ist.
 | Stripe         | Konto vorhanden; Schlüssel nur im Secret Manager | Antwort Shop-Betreiber |
 | Versand        | Immer versichert, nur **DE** und **NL**. 5-kg-Paket, versichert bis 500 €: **DE 7,69 €**, **NL 17,49 €** | Antwort Shop-Betreiber; Preise zentral in `src/modules/shipping/` |
 | Bestellwert    | **Max. 500,00 € Warenwert pro Bestellung** (Versand nicht eingerechnet); Prüfung verbindlich in `buildOrder`, Hinweis im Warenkorb | Versicherungsgrenze des Pakets; Entscheidung Shop-Betreiber statt Höherversicherung. Einzelartikel über 500 € sind damit nicht bestellbar |
-| Bestellablauf  | Bestellung = Schnappschuss (Namen, Preise); beim Absenden wird der **Bestand in derselben Transaktion reserviert**; Zahlung bestätigt → `paid`, Abbruch/Ablauf → `cancelled` + Bestand zurück (jeweils idempotent) | Kein Überverkauf, auch bei gleichzeitigen Käufen (Integrationstest); doppelte Stripe-Webhooks sind harmlos |
+| Bestellablauf  | Bestellung = Schnappschuss (Namen, Preise, Lagerplatz); beim Absenden wird der **Bestand in derselben Transaktion reserviert**; Zahlung bestätigt → `paid`, Abbruch/Ablauf → `cancelled` + Bestand zurück, gepackt → `shipped` (nur aus `paid`; jeweils idempotent). Stornieren nur vor der Zahlung | Kein Überverkauf, auch bei gleichzeitigen Käufen (Integrationstest); doppelte Stripe-Webhooks sind harmlos |
+| Kasse          | `/kasse` (Adresse) → `/kasse/uebersicht` (Bestellübersicht mit „Zahlungspflichtig bestellen“, § 312j BGB) → `/kasse/danke`. Adresse liegt bis zur Bestellung im httpOnly-Cookie `checkout` (24 h, danach/bei Bestellung gelöscht); Honeypot im Adressformular. Die Übersicht rechnet mit `buildOrder`; beim Bestellen wird die **angezeigte Gesamtsumme serverseitig verglichen** | Keine DB-Schreibzugriffe vor der Bestellung; Kunde zahlt genau, was er gesehen hat (Preisänderung, veraltete Übersicht durch Next-Activity) |
+| Bestellen ohne Stripe | Bestellungen werden nur angelegt, wenn `ORDERING_ENABLED=true` (nur `.env.development`). Live ist die Kasse sichtbar, der Button aber gesperrt (Schalter in `src/modules/orders/ordering-switch.ts`, Server Action prüft selbst) | Entscheidung Shop-Betreiber: live keine Bestellungen, die ohne Zahlung Bestand blockieren. Schalter mit der Stripe-Anbindung entfernen |
+| Lagerplatz     | Freitext **pro Angebot** (z. B. „Ordner 3 / S. 12“), intern – nie an Shop-Client-Components geben. Admin-Packliste unter `/admin/bestellungen`, sortiert nach Lagerplatz | Antwort Shop-Betreiber; gleiche Karte kann je Zustand/Sprache woanders liegen |
 | Auth-Domains   | Live-Domain von App Hosting ist in Firebase Auth als autorisierte Domain eingetragen | Sonst schließt sich das Google-Anmeldefenster sofort (`auth/unauthorized-domain`); bei eigener Domain diese ebenfalls eintragen |
 | Firestore-Deploy | Claude darf Firestore-Rules und -Indexe selbst in die Produktion deployen – immer vom Stand auf `main` | Freigabe Shop-Betreiber; Code-Rollout läuft ohnehin automatisch über App Hosting |
 | Admin-Liste    | Produktion: Secret `adminEmails` im Secret Manager (nicht im öffentlichen Repo); lokal: `admin@example.com` | Ändern: `npx firebase apphosting:secrets:set adminEmails --project prod` |
