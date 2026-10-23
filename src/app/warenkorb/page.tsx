@@ -4,6 +4,8 @@ import { Suspense } from "react";
 import { describeOffer, PRODUCT_KIND_LABELS } from "@/modules/catalog";
 import type { PricedCartLine } from "@/modules/cart";
 import { getPricedCart } from "@/modules/cart/server";
+import { maxOrderValueMessage } from "@/modules/orders";
+import { exceedsMaxOrderValue } from "@/modules/shipping";
 import { formatEuro } from "@/shared/money";
 import { PriceNote } from "@/app/price-note";
 import { changeQuantity, removeFromCart } from "./actions";
@@ -58,6 +60,11 @@ async function CartContents() {
           <span className="font-semibold">{formatEuro(cart.subtotalCents)}</span>
         </p>
         <PriceNote />
+        {exceedsMaxOrderValue(cart.subtotalCents) && (
+          <p role="alert" className="max-w-md text-right text-sm text-brand-red">
+            {maxOrderValueMessage()}
+          </p>
+        )}
         <button
           type="button"
           disabled
