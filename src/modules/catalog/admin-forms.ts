@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { optionalText, text, validateForm, type FormFields, type FormResult } from "@/shared/form-validation";
 import { parseEuroToCents } from "@/shared/money";
 import { cardSetSchema, gameSchema, type CardSet, type Game } from "./game";
 import { offerSchema, type Offer } from "./offer";
@@ -8,8 +8,7 @@ import { toSlug } from "./slug";
 // Turns raw admin form fields (always strings) into validated catalog entities.
 // Errors come back as German text ready to show next to the form.
 
-export type FormFields = Record<string, string | undefined>;
-export type FormResult<T> = { ok: true; value: T } | { ok: false; error: string };
+export type { FormFields, FormResult };
 
 const FIELD_LABELS: Record<string, string> = {
   id: "Name",
@@ -34,19 +33,19 @@ const FIELD_LABELS: Record<string, string> = {
 
 export function parseGameForm(fields: FormFields): FormResult<Game> {
   const name = text(fields.name);
-  return validate(gameSchema, { id: toSlug(name), name });
+  return validateForm(gameSchema, { id: toSlug(name), name }, FIELD_LABELS);
 }
 
 export function parseCardSetForm(fields: FormFields): FormResult<CardSet> {
   const gameId = text(fields.gameId);
   const code = text(fields.code);
-  return validate(cardSetSchema, {
+  return validateForm(cardSetSchema, {
     id: toSlug(`${gameId} ${code}`),
     gameId,
     name: text(fields.name),
     code,
     releaseDate: optionalText(fields.releaseDate),
-  });
+  }, FIELD_LABELS);
 }
 
 export function parseProductForm(fields: FormFields, id: string): FormResult<Product> {
@@ -60,14 +59,14 @@ export function parseProductForm(fields: FormFields, id: string): FormResult<Pro
     kind === "single"
       ? { ...common, slug: toSlug(`${name} ${collectorNumber}`), collectorNumber, rarity: text(fields.rarity) }
       : { ...common, slug: toSlug(name) };
-  return validate(productSchema, candidate);
+  return validateForm(productSchema, candidate, FIELD_LABELS);
 }
 
 export function parseOfferForm(fields: FormFields, ids: { id: string; productId: string }): FormResult<Offer> {
   const priceCents = parseEuroToCents(text(fields.price));
   if (priceCents === null) return { ok: false, error: "Preis: bitte als Euro-Betrag eingeben, z. B. 39,99" };
 
-  return validate(offerSchema, {
+  return validateForm(offerSchema, {
     ...ids,
     type: text(fields.type),
     language: optionalText(fields.language),
@@ -77,46 +76,14 @@ export function parseOfferForm(fields: FormFields, ids: { id: string; productId:
     certNumber: optionalText(fields.certNumber),
     priceCents,
     stock: optionalNumber(fields.stock),
-  });
+  }, FIELD_LABELS);
 }
 
 /** Changes only price and stock of an existing offer – the daily business. */
 export function parseOfferUpdateForm(fields: FormFields, offer: Offer): FormResult<Offer> {
   const priceCents = parseEuroToCents(text(fields.price));
   if (priceCents === null) return { ok: false, error: "Preis: bitte als Euro-Betrag eingeben, z. B. 39,99" };
-  return validate(offerSchema, { ...offer, priceCents, stock: optionalNumber(fields.stock) });
-}
-
-function validate<T>(schema: z.ZodType<T>, candidate: unknown): FormResult<T> {
-  const result = schema.safeParse(candidate, { error: z.locales.de().localeError });
-  if (result.success) return { ok: true, value: result.data };
-
-  // One message per field; a derived field (e.g. slug from name) would otherwise repeat it.
-  // "bitte ausfüllen" wins, because it is the actual cause.
-  const messages = new Map<string, string>();
-  for (const issue of result.error.issues) {
-    const label = FIELD_LABELS[String(issue.path[0] ?? "")] ?? String(issue.path[0] ?? "");
-    if (isMissing(issue)) messages.set(label, MISSING);
-    else if (!messages.has(label)) messages.set(label, issue.message);
-  }
-  return { ok: false, error: [...messages].map(([label, message]) => `${label}: ${message}`).join(" · ") };
-}
-
-const MISSING = "bitte ausfüllen";
-
-function isMissing(issue: z.core.$ZodIssue) {
-  return (
-    (issue.code === "too_small" && issue.origin === "string" && issue.minimum === 1) ||
-    (issue.code === "invalid_type" && issue.input === undefined)
-  );
-}
-
-function text(value: string | undefined) {
-  return (value ?? "").trim();
-}
-
-function optionalText(value: string | undefined) {
-  return text(value) || undefined;
+  return validateForm(offerSchema, { ...offer, priceCents, stock: optionalNumber(fields.stock) }, FIELD_LABELS);
 }
 
 // German decimal comma, e.g. grade "9,5".

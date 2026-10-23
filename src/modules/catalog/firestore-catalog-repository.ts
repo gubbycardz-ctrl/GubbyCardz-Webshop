@@ -9,7 +9,7 @@ import { cardSetSchema, gameSchema, type CardSet } from "./game";
 import { isOfferTypeAllowedFor, offerSchema } from "./offer";
 import { productSchema } from "./product";
 
-const COLLECTIONS = {
+export const CATALOG_COLLECTIONS = {
   games: "games",
   cardSets: "cardSets",
   products: "products",
@@ -21,10 +21,10 @@ const MAX_GAMES = 50;
 const MAX_CARD_SETS_PER_GAME = 500;
 
 export function createFirestoreCatalogRepository(db: Firestore): CatalogRepository {
-  const games = db.collection(COLLECTIONS.games);
-  const cardSets = db.collection(COLLECTIONS.cardSets);
-  const products = db.collection(COLLECTIONS.products);
-  const offers = db.collection(COLLECTIONS.offers);
+  const games = db.collection(CATALOG_COLLECTIONS.games);
+  const cardSets = db.collection(CATALOG_COLLECTIONS.cardSets);
+  const products = db.collection(CATALOG_COLLECTIONS.products);
+  const offers = db.collection(CATALOG_COLLECTIONS.offers);
 
   return {
     async saveGame(game) {
