@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseCheckoutForm } from "./checkout-form";
+import { checkoutFields, parseCheckoutForm } from "./checkout-form";
 
 const valid = {
   email: " Kunde@Example.com ",
@@ -47,5 +47,12 @@ describe("parseCheckoutForm", () => {
   it("rejects invalid email addresses", () => {
     const result = parseCheckoutForm({ ...valid, email: "kein-at-zeichen" });
     expect(!result.ok && result.error).toMatch(/^E-Mail: /);
+  });
+});
+
+describe("checkoutFields", () => {
+  it("round-trips through parseCheckoutForm", () => {
+    const parsed = parseCheckoutForm(valid);
+    expect(parsed.ok && parseCheckoutForm(checkoutFields(parsed.value))).toEqual(parsed);
   });
 });
