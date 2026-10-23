@@ -16,6 +16,7 @@ export {
   parseOfferForm,
   parseOfferUpdateForm,
   parseProductForm,
+  parseProductUpdateForm,
   type FormFields,
   type FormResult,
 } from "./admin-forms";

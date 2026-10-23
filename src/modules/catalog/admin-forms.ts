@@ -62,6 +62,11 @@ export function parseProductForm(fields: FormFields, id: string): FormResult<Pro
   return validateForm(productSchema, candidate, FIELD_LABELS);
 }
 
+/** Edits an existing product. The kind stays fixed, because its offers were made for that kind. */
+export function parseProductUpdateForm(fields: FormFields, product: Product): FormResult<Product> {
+  return parseProductForm({ ...fields, kind: product.kind }, product.id);
+}
+
 export function parseOfferForm(fields: FormFields, ids: { id: string; productId: string }): FormResult<Offer> {
   const priceCents = parseEuroToCents(text(fields.price));
   if (priceCents === null) return { ok: false, error: "Preis: bitte als Euro-Betrag eingeben, z. B. 39,99" };

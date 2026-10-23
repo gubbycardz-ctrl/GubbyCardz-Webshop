@@ -200,6 +200,8 @@ Vor jedem Commit müssen `lint`, `typecheck`, `test` und `build` grün sein – 
 - Löschen: immer mit Bestätigung (`DeleteButton`). Regeln im Repository: Spiel nur ohne Sets/Produkte, Set nur ohne
   Produkte, Produkt löscht seine Angebote mit. Bestellungen bleiben unberührt (Schnappschuss).
 - Admin-Server-Actions rufen nach Änderungen `updateTag()` (Shop) und `refresh()` (aktuelle Admin-Seite) auf.
+- Produkt bearbeiten: Die Produktart ist nach dem Anlegen fest (die Angebote hängen daran). Der Slug folgt dem Namen
+  (+ Nummer bei Einzelkarten) – alte Shop-Links werden dann 404, Weiterleitungen gibt es bewusst (noch) nicht.
 `.firebaserc`: Standard ist das Demo-Projekt `demo-gubbycardz` (Emulatoren ohne Login), `prod` ist das echte Projekt.
 Live-Shop: https://gubbycardz-web--gubbycardz-80976.europe-west4.hosted.app – jeder Merge auf `main` wird automatisch ausgerollt.
 

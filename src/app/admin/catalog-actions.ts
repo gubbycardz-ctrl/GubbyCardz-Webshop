@@ -9,6 +9,7 @@ import {
   parseOfferForm,
   parseOfferUpdateForm,
   parseProductForm,
+  parseProductUpdateForm,
   type FormFields,
   type FormResult,
 } from "@/modules/catalog";
@@ -34,6 +35,15 @@ export async function createProduct(_: FormState, formData: FormData): Promise<F
   // Straight to the new product, where its offers are added.
   if (!state.error && parsed.ok) redirect(`/admin/produkte/${parsed.value.id}`);
   return state;
+}
+
+export async function updateProduct(productId: string, _: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+  if (!isId(productId)) return { error: "Produkt nicht gefunden." };
+  const repository = getCatalogRepository();
+  const product = await repository.getProductById(productId);
+  if (!product) return { error: "Produkt nicht gefunden." };
+  return save(parseProductUpdateForm(fieldsOf(formData), product), (updated) => repository.saveProduct(updated), "Gespeichert.");
 }
 
 export async function createOffer(productId: string, _: FormState, formData: FormData): Promise<FormState> {

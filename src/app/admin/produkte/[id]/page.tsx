@@ -8,6 +8,7 @@ import { getCatalogRepository } from "@/modules/catalog/server";
 import { deleteProduct } from "../../catalog-actions";
 import { DeleteButton } from "../../_components/delete-button";
 import { OfferForm, OfferRow } from "../../_components/offer-forms";
+import { ProductForm } from "../../_components/product-form";
 
 export const metadata: Metadata = { title: "Produkt" };
 
@@ -25,7 +26,9 @@ async function ProductWithOffers({ params }: Pick<PageProps<"/admin/produkte/[id
   const repository = getCatalogRepository();
   const product = await repository.getProductById(id);
   if (!product) notFound();
-  const offers = await repository.listOffers(product.id);
+  const [offers, games] = await Promise.all([repository.listOffers(product.id), repository.listGames()]);
+  // All games' sets, because the product may move to another game.
+  const sets = (await Promise.all(games.map((game) => repository.listCardSets(game.id)))).flat();
 
   return (
     <div className="flex flex-col gap-10">
@@ -49,6 +52,13 @@ async function ProductWithOffers({ params }: Pick<PageProps<"/admin/produkte/[id
             Im Shop ansehen
           </Link>
         </p>
+      </section>
+
+      <section>
+        <h2 className="text-xl font-semibold">Produktdaten</h2>
+        <div className="mt-3">
+          <ProductForm games={games} sets={sets} product={product} />
+        </div>
       </section>
 
       <section>

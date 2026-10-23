@@ -5,8 +5,10 @@ import {
   parseOfferForm,
   parseOfferUpdateForm,
   parseProductForm,
+  parseProductUpdateForm,
 } from "./admin-forms";
 import type { Offer } from "./offer";
+import type { Product } from "./product";
 
 describe("parseGameForm", () => {
   it("derives the id from the name", () => {
@@ -57,6 +59,26 @@ describe("parseProductForm", () => {
 
   it("rejects unknown kinds", () => {
     expect(parseProductForm({ kind: "mystery", name: "X" }, "p3").ok).toBe(false);
+  });
+});
+
+describe("parseProductUpdateForm", () => {
+  const product: Product = {
+    id: "p1", kind: "single", name: "Glurak xe", slug: "glurak-xe-199-165", gameId: "pokemon", setId: "pokemon-mew", collectorNumber: "199/165", rarity: "SIR",
+  };
+
+  it("fixes a typo and moves the slug along with the name", () => {
+    const result = parseProductUpdateForm(
+      { kind: "single", name: "Glurak ex", gameId: "pokemon", setId: "pokemon-mew", collectorNumber: "199/165", rarity: "SIR" },
+      product,
+    );
+    expect(result).toEqual({ ok: true, value: { ...product, name: "Glurak ex", slug: "glurak-ex-199-165" } });
+  });
+
+  it("keeps id and kind, whatever the form sends", () => {
+    const display: Product = { id: "p2", kind: "sealed", name: "Display", slug: "display", gameId: "pokemon" };
+    const result = parseProductUpdateForm({ id: "other", kind: "single", name: "151 Display", gameId: "pokemon", setId: "" }, display);
+    expect(result).toEqual({ ok: true, value: { ...display, name: "151 Display", slug: "151-display" } });
   });
 });
 
