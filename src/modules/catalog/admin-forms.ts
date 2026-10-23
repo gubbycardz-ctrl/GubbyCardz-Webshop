@@ -48,11 +48,21 @@ export function parseCardSetForm(fields: FormFields): FormResult<CardSet> {
   }, FIELD_LABELS);
 }
 
-export function parseProductForm(fields: FormFields, id: string): FormResult<Product> {
+export function parseProductForm(
+  fields: FormFields,
+  { id, createdAt }: { id: string; createdAt: Date },
+): FormResult<Product> {
   const kind = text(fields.kind) as ProductKind;
   const name = text(fields.name);
   const collectorNumber = text(fields.collectorNumber);
-  const common = { id, kind, name, gameId: optionalText(fields.gameId), setId: optionalText(fields.setId) };
+  const common = {
+    id,
+    kind,
+    name,
+    gameId: optionalText(fields.gameId),
+    setId: optionalText(fields.setId),
+    createdAt: createdAt.toISOString(),
+  };
 
   // Singles get their number into the URL, because many cards share a name.
   const candidate =

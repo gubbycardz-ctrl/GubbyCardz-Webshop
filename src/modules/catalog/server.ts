@@ -6,10 +6,12 @@ export { getCatalogRepository } from "./default-repository";
 export { prepareStockChange, type StockItem, type StockShortage } from "./firestore-stock";
 export {
   CATALOG_CACHE_TAG,
+  getAccessories,
   getAvailableOffers,
   getCardSet,
   getGame,
   getGames,
+  getNewestProducts,
   getProduct,
   getProductsOfGame,
 } from "./cached-queries";

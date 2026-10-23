@@ -11,7 +11,13 @@ import { AddToCartButton } from "./add-to-cart-button";
 export async function generateMetadata({ params }: PageProps<"/produkte/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const product = await getProduct(slug);
-  return product ? { title: product.name } : { title: "Produkt nicht gefunden" };
+  return product
+    ? {
+        title: product.name,
+        description: `${product.name} (${PRODUCT_KIND_LABELS[product.kind]}) bei GubbyCardz kaufen.`,
+        alternates: { canonical: `/produkte/${product.slug}` },
+      }
+    : { title: "Produkt nicht gefunden" };
 }
 
 export default function ProductPage({ params }: PageProps<"/produkte/[slug]">) {

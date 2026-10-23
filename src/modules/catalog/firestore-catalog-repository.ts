@@ -86,6 +86,15 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
       return snapshot.docs.map((doc) => productSchema.parse(doc.data()));
     },
 
+    async listNewestProducts(limit) {
+      // Single-field ordering: covered by Firestore's automatic index, no composite index needed.
+      const snapshot = await products
+        .orderBy("createdAt", "desc")
+        .limit(Math.min(limit, MAX_PAGE_SIZE))
+        .get();
+      return snapshot.docs.map((doc) => productSchema.parse(doc.data()));
+    },
+
     async saveOffer(offer) {
       const valid = offerSchema.parse(offer);
       await db.runTransaction(async (transaction) => {

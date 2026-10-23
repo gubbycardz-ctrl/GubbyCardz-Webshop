@@ -143,6 +143,18 @@ describe("products", () => {
     expect(pokemon.map((product) => product.name)).toEqual(["Bisasam", "Glurak ex"]);
     expect(firstOnly).toHaveLength(1);
   });
+
+  it("lists the newest products first, leaving out those without creation date", async () => {
+    await repository.saveProduct({ ...charizard, createdAt: "2026-10-01T10:00:00.000Z" });
+    await repository.saveProduct({ ...display, createdAt: "2026-10-20T10:00:00.000Z" });
+    await repository.saveProduct({ id: "p-sleeves", kind: "accessory", name: "Sleeves", slug: "sleeves" });
+
+    const newest = await repository.listNewestProducts(10);
+    const newestOnly = await repository.listNewestProducts(1);
+
+    expect(newest.map((product) => product.id)).toEqual(["p-display", "p-charizard"]);
+    expect(newestOnly.map((product) => product.id)).toEqual(["p-display"]);
+  });
 });
 
 describe("offers", () => {
