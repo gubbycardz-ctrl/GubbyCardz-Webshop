@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { slugSchema } from "./game";
+import { toSlug } from "./slug";
 import { SEALED_CATEGORIES, keysOf } from "./vocabulary";
 
 // A product is *what* exists (e.g. "Charizard ex 199/165"). Price, stock,
@@ -45,3 +46,8 @@ export const productSchema = z.discriminatedUnion("kind", [
 
 export type Product = z.infer<typeof productSchema>;
 export type ProductKind = Product["kind"];
+
+/** Singles get their number into the URL, because many cards share a name. */
+export function productSlug({ kind, name, collectorNumber }: { kind: ProductKind; name: string; collectorNumber?: string }) {
+  return toSlug(kind === "single" ? `${name} ${collectorNumber}` : name);
+}

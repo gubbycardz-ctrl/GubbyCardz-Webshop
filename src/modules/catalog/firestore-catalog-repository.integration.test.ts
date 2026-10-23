@@ -217,6 +217,15 @@ describe("offers", () => {
     expect(await repository.getOfferInternals([offer.id, "missing"])).toEqual(new Map([[offer.id, internals]]));
   });
 
+  it("finds offers by SKU, also beyond Firestore's limit of 30 values per query", async () => {
+    const ids = Array.from({ length: 35 }, (_, index) => index);
+    for (const index of ids) await repository.saveOffer({ ...nearMintOffer, id: `o-${index}` }, { sku: `SKU-${index}` });
+
+    const found = await repository.getOfferInternalsBySkus([...ids.map((index) => `SKU-${index}`), "UNKNOWN"]);
+    expect(found.size).toBe(35);
+    expect(found.get("SKU-34")).toEqual({ offerId: "o-34", internals: { sku: "SKU-34" } });
+  });
+
   it("keeps internals when an offer is saved without them, and clears fields left empty", async () => {
     await repository.saveOffer(nearMintOffer, { sku: "PKM-1", storageLocation: "Regal A3" });
     await repository.saveOffer({ ...nearMintOffer, stock: 0 });
