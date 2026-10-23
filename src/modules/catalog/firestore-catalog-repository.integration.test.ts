@@ -176,6 +176,12 @@ describe("offers", () => {
     await expect(repository.getOffersByIds(tooMany)).rejects.toThrow(CatalogError);
   });
 
+  it("deletes a single offer", async () => {
+    await repository.saveOffer(nearMintOffer);
+    await repository.deleteOffer(nearMintOffer.id);
+    expect(await repository.listOffers(charizard.id)).toEqual([]);
+  });
+
   it("rejects offers for unknown products", async () => {
     await expect(repository.saveOffer({ ...nearMintOffer, productId: "missing" })).rejects.toThrow(CatalogError);
   });
@@ -195,5 +201,49 @@ describe("offers", () => {
 
     await expect(repository.saveOffer(gradedDisplay)).rejects.toThrow(CatalogError);
     expect(await repository.listOffers(display.id)).toEqual([]);
+  });
+});
+
+describe("deleting", () => {
+  beforeEach(async () => {
+    await repository.saveGame({ id: "pokemon", name: "Pokémon" });
+    await repository.saveCardSet({ id: "sv3pt5", gameId: "pokemon", name: "151", code: "MEW" });
+    await repository.saveProduct(charizard);
+    await repository.saveOffer(nearMintOffer);
+    await repository.saveOffer({ ...nearMintOffer, id: "o-lp", condition: "light-played" });
+  });
+
+  it("deletes a product together with its offers", async () => {
+    await repository.deleteProduct(charizard.id);
+
+    expect(await repository.getProductById(charizard.id)).toBeNull();
+    expect(await repository.getOffersByIds([nearMintOffer.id, "o-lp"])).toEqual([]);
+  });
+
+  it("keeps a set while products still belong to it", async () => {
+    await expect(repository.deleteCardSet("sv3pt5")).rejects.toThrow(CatalogError);
+    expect(await repository.listCardSets("pokemon")).toHaveLength(1);
+
+    await repository.deleteProduct(charizard.id);
+    await repository.deleteCardSet("sv3pt5");
+    expect(await repository.listCardSets("pokemon")).toEqual([]);
+  });
+
+  it("keeps a game while it still has sets or products", async () => {
+    await expect(repository.deleteGame("pokemon")).rejects.toThrow(CatalogError);
+
+    await repository.deleteProduct(charizard.id);
+    await expect(repository.deleteGame("pokemon")).rejects.toThrow(CatalogError);
+
+    await repository.deleteCardSet("sv3pt5");
+    await repository.deleteGame("pokemon");
+    expect(await repository.listGames()).toEqual([]);
+  });
+
+  it("treats deleting something that is already gone as done", async () => {
+    await repository.deleteOffer("missing");
+    await repository.deleteProduct("missing");
+    await repository.deleteCardSet("missing");
+    await repository.deleteGame("missing");
   });
 });

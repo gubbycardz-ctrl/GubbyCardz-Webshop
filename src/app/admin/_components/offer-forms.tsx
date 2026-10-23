@@ -11,7 +11,8 @@ import {
   type ProductKind,
 } from "@/modules/catalog";
 import { centsToEuroInput, formatEuro } from "@/shared/money";
-import { createOffer, updateOffer } from "../catalog-actions";
+import { createOffer, deleteOffer, updateOffer } from "../catalog-actions";
+import { DeleteButton } from "./delete-button";
 import { Field, FormMessage, SubmitButton, inputClass, useAdminForm } from "./form-kit";
 
 type CardOfferType = "raw-card" | "graded-card";
@@ -97,6 +98,10 @@ export function OfferRow({ offer }: { offer: Offer }) {
         <input name="stock" required type="number" min={0} step={1} defaultValue={offer.stock} className={`${inputClass} w-24`} />
       </Field>
       <SubmitButton pending={pending}>Speichern</SubmitButton>
+      <DeleteButton
+        action={deleteOffer.bind(null, offer.id)}
+        confirmMessage={`Angebot „${describeOffer(offer)}“ wirklich löschen?`}
+      />
       <FormMessage state={state} />
     </form>
   );
