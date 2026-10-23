@@ -1,9 +1,8 @@
 // We always ship insured, to Germany and the Netherlands. This is the only place to change rates.
 export const SHIPPING_COUNTRIES = {
-  // 5 kg parcel, liability up to 500 € (confirmed by the shop owner).
+  // 5 kg parcel, insured up to 500 € (both rates confirmed by the shop owner).
   DE: { label: "Deutschland", insuredRateCents: 769 },
-  // PROVISIONAL – still to be confirmed by the shop owner.
-  NL: { label: "Niederlande", insuredRateCents: 1699 },
+  NL: { label: "Niederlande", insuredRateCents: 1749 },
 } as const;
 
 export type ShippingCountry = keyof typeof SHIPPING_COUNTRIES;
