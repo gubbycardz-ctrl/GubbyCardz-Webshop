@@ -74,6 +74,11 @@ describe("parseOfferForm", () => {
     });
   });
 
+  it("keeps an optional storage location", () => {
+    const result = parseOfferForm({ type: "accessory", price: "8,99", stock: "20", storageLocation: "Regal A2" }, ids);
+    expect(result.ok && result.value.storageLocation).toBe("Regal A2");
+  });
+
   it("rejects prices that are not clear euro amounts", () => {
     const result = parseOfferForm({ type: "accessory", price: "39,999", stock: "1" }, ids);
     expect(result).toEqual({ ok: false, error: "Preis: bitte als Euro-Betrag eingeben, z. B. 39,99" });
@@ -88,10 +93,16 @@ describe("parseOfferForm", () => {
 describe("parseOfferUpdateForm", () => {
   const offer: Offer = { id: "o1", productId: "p1", type: "raw-card", language: "de", condition: "near-mint", priceCents: 3999, stock: 2 };
 
-  it("changes only price and stock", () => {
-    expect(parseOfferUpdateForm({ price: "34,50", stock: "0", condition: "poor" }, offer)).toEqual({
+  it("changes only price, stock and storage location", () => {
+    expect(parseOfferUpdateForm({ price: "34,50", stock: "0", condition: "poor", storageLocation: " Ordner 3 " }, offer)).toEqual({
       ok: true,
-      value: { ...offer, priceCents: 3450, stock: 0 },
+      value: { ...offer, priceCents: 3450, stock: 0, storageLocation: "Ordner 3" },
     });
+  });
+
+  it("clears the storage location when the field is emptied", () => {
+    const stored: Offer = { ...offer, storageLocation: "Ordner 3" };
+    const result = parseOfferUpdateForm({ price: "39,99", stock: "2", storageLocation: "" }, stored);
+    expect(result.ok && result.value.storageLocation).toBeUndefined();
   });
 });

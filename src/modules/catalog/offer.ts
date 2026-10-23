@@ -18,6 +18,9 @@ const offerBase = z.object({
   productId: z.string().min(1),
   priceCents: z.int().positive(),
   stock: z.int().nonnegative(),
+  // Internal: where the item lies in our storage (e.g. "Ordner 3 / S. 12"), shown on packing lists.
+  // Never pass it to the shop's client components.
+  storageLocation: z.string().trim().min(1).max(60).optional(),
 });
 
 const rawCardOfferSchema = offerBase.extend({

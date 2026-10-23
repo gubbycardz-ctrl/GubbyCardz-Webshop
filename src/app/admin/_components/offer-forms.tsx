@@ -17,6 +17,8 @@ import { Field, FormMessage, SubmitButton, inputClass, useAdminForm } from "./fo
 
 type CardOfferType = "raw-card" | "graded-card";
 
+const STORAGE_LOCATION_EXAMPLE = "z. B. Ordner 3 / S. 12";
+
 export function OfferForm({ productId, productKind }: { productId: string; productKind: ProductKind }) {
   const { state, pending, onSubmit } = useAdminForm(createOffer.bind(null, productId));
   const [cardType, setCardType] = useState<CardOfferType>("raw-card");
@@ -69,6 +71,9 @@ export function OfferForm({ productId, productKind }: { productId: string; produ
       <Field label="Bestand">
         <input name="stock" required type="number" min={0} step={1} defaultValue={1} className={inputClass} />
       </Field>
+      <Field label="Lagerplatz (optional)">
+        <input name="storageLocation" maxLength={60} placeholder={STORAGE_LOCATION_EXAMPLE} className={inputClass} />
+      </Field>
       <div className="flex flex-wrap items-center gap-3 sm:col-span-3">
         <SubmitButton pending={pending}>Angebot anlegen</SubmitButton>
         <FormMessage state={state} />
@@ -77,7 +82,7 @@ export function OfferForm({ productId, productKind }: { productId: string; produ
   );
 }
 
-/** One row per offer: price and stock can be changed in place. */
+/** One row per offer: price, stock and storage location can be changed in place. */
 export function OfferRow({ offer }: { offer: Offer }) {
   const { state, pending, onSubmit } = useAdminForm(updateOffer.bind(null, offer.productId, offer.id), {
     resetOnSuccess: false,
@@ -89,6 +94,7 @@ export function OfferRow({ offer }: { offer: Offer }) {
         {describeOffer(offer)}
         <span className="block text-foreground/60">
           aktuell {formatEuro(offer.priceCents)} · {offer.stock} auf Lager
+          {offer.storageLocation && ` · ${offer.storageLocation}`}
         </span>
       </div>
       <Field label="Preis in €">
@@ -96,6 +102,15 @@ export function OfferRow({ offer }: { offer: Offer }) {
       </Field>
       <Field label="Bestand">
         <input name="stock" required type="number" min={0} step={1} defaultValue={offer.stock} className={`${inputClass} w-24`} />
+      </Field>
+      <Field label="Lagerplatz">
+        <input
+          name="storageLocation"
+          maxLength={60}
+          defaultValue={offer.storageLocation}
+          placeholder={STORAGE_LOCATION_EXAMPLE}
+          className={`${inputClass} w-40`}
+        />
       </Field>
       <SubmitButton pending={pending}>Speichern</SubmitButton>
       <DeleteButton

@@ -29,6 +29,7 @@ const FIELD_LABELS: Record<string, string> = {
   certNumber: "Zertifikatsnummer",
   priceCents: "Preis",
   stock: "Bestand",
+  storageLocation: "Lagerplatz",
 };
 
 export function parseGameForm(fields: FormFields): FormResult<Game> {
@@ -76,14 +77,20 @@ export function parseOfferForm(fields: FormFields, ids: { id: string; productId:
     certNumber: optionalText(fields.certNumber),
     priceCents,
     stock: optionalNumber(fields.stock),
+    storageLocation: optionalText(fields.storageLocation),
   }, FIELD_LABELS);
 }
 
-/** Changes only price and stock of an existing offer – the daily business. */
+/** Changes only price, stock and storage location of an existing offer – the daily business. */
 export function parseOfferUpdateForm(fields: FormFields, offer: Offer): FormResult<Offer> {
   const priceCents = parseEuroToCents(text(fields.price));
   if (priceCents === null) return { ok: false, error: "Preis: bitte als Euro-Betrag eingeben, z. B. 39,99" };
-  return validateForm(offerSchema, { ...offer, priceCents, stock: optionalNumber(fields.stock) }, FIELD_LABELS);
+  return validateForm(offerSchema, {
+    ...offer,
+    priceCents,
+    stock: optionalNumber(fields.stock),
+    storageLocation: optionalText(fields.storageLocation),
+  }, FIELD_LABELS);
 }
 
 // German decimal comma, e.g. grade "9,5".

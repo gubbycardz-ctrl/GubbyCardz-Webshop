@@ -24,15 +24,15 @@ async function seed() {
   await catalog.saveProduct({ id: "op05-display", kind: "sealed", name: "Display OP-05", slug: "display-op-05", gameId: "one-piece", setId: "op05" });
   await catalog.saveProduct({ id: "sleeves-black", kind: "accessory", name: "Sleeves schwarz (100 Stück)", slug: "sleeves-schwarz-100" });
 
-  await catalog.saveOffer({ id: "glurak-de-nm", productId: "glurak-ex-199", type: "raw-card", language: "de", condition: "near-mint", priceCents: 11999, stock: 2 });
-  await catalog.saveOffer({ id: "glurak-en-lp", productId: "glurak-ex-199", type: "raw-card", language: "en", condition: "light-played", priceCents: 8499, stock: 1 });
-  await catalog.saveOffer({ id: "glurak-psa10", productId: "glurak-ex-199", type: "graded-card", language: "en", gradingCompany: "psa", grade: 10, certNumber: "81234567", priceCents: 39900, stock: 1 });
+  await catalog.saveOffer({ id: "glurak-de-nm", productId: "glurak-ex-199", type: "raw-card", language: "de", condition: "near-mint", priceCents: 11999, stock: 2, storageLocation: "Ordner 1 / S. 3" });
+  await catalog.saveOffer({ id: "glurak-en-lp", productId: "glurak-ex-199", type: "raw-card", language: "en", condition: "light-played", priceCents: 8499, stock: 1, storageLocation: "Ordner 1 / S. 3" });
+  await catalog.saveOffer({ id: "glurak-psa10", productId: "glurak-ex-199", type: "graded-card", language: "en", gradingCompany: "psa", grade: 10, certNumber: "81234567", priceCents: 39900, stock: 1, storageLocation: "Vitrine A" });
   await catalog.saveOffer({ id: "bisasam-sold-out", productId: "bisasam-166", type: "raw-card", language: "de", condition: "near-mint", priceCents: 2499, stock: 0 });
-  await catalog.saveOffer({ id: "mew-bundle-de", productId: "mew-151-display", type: "sealed", language: "de", priceCents: 3499, stock: 5 });
-  await catalog.saveOffer({ id: "luffy-ja", productId: "luffy-op05-119", type: "raw-card", language: "ja", condition: "near-mint", priceCents: 15999, stock: 1 });
-  await catalog.saveOffer({ id: "luffy-zh", productId: "luffy-op05-119", type: "raw-card", language: "zh-Hans", condition: "excellent", priceCents: 6999, stock: 1 });
-  await catalog.saveOffer({ id: "op05-display-ja", productId: "op05-display", type: "sealed", language: "ja", priceCents: 12999, stock: 3 });
-  await catalog.saveOffer({ id: "sleeves-black", productId: "sleeves-black", type: "accessory", priceCents: 899, stock: 20 });
+  await catalog.saveOffer({ id: "mew-bundle-de", productId: "mew-151-display", type: "sealed", language: "de", priceCents: 3499, stock: 5, storageLocation: "Regal B2" });
+  await catalog.saveOffer({ id: "luffy-ja", productId: "luffy-op05-119", type: "raw-card", language: "ja", condition: "near-mint", priceCents: 15999, stock: 1, storageLocation: "Ordner 2 / S. 1" });
+  await catalog.saveOffer({ id: "luffy-zh", productId: "luffy-op05-119", type: "raw-card", language: "zh-Hans", condition: "excellent", priceCents: 6999, stock: 1, storageLocation: "Ordner 2 / S. 1" });
+  await catalog.saveOffer({ id: "op05-display-ja", productId: "op05-display", type: "sealed", language: "ja", priceCents: 12999, stock: 3, storageLocation: "Regal B3" });
+  await catalog.saveOffer({ id: "sleeves-black", productId: "sleeves-black", type: "accessory", priceCents: 899, stock: 20, storageLocation: "Regal C1" });
 
   console.log("Emulator mit Beispieldaten befüllt.");
 }
