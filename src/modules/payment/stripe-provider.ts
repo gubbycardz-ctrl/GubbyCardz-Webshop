@@ -63,8 +63,10 @@ export function createStripePaymentProvider(stripe: Stripe, webhookSecret: strin
       let event: Stripe.Event;
       try {
         event = stripe.webhooks.constructEvent(payload, headers.get(SIGNATURE_HEADER) ?? "", webhookSecret);
-      } catch {
-        throw new PaymentWebhookError("Invalid webhook signature");
+      } catch (error) {
+        // Stripe's reason (e.g. "No signatures found matching …") helps to tell a wrong secret from a missing header.
+        // It never contains the secret.
+        throw new PaymentWebhookError(`Invalid webhook signature: ${error instanceof Error ? error.message : "unknown"}`);
       }
 
       switch (event.type) {
