@@ -15,4 +15,5 @@ export {
   getNewestProducts,
   getProduct,
   getProductsOfGame,
+  getRecommendedProducts,
 } from "./cached-queries";

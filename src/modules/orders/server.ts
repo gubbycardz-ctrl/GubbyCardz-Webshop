@@ -5,3 +5,4 @@ export { createFirestoreOrderRepository } from "./firestore-order-repository";
 export { getOrderRepository } from "./default-repository";
 export { clearCheckoutCustomer, readCheckoutCustomer, writeCheckoutCustomer } from "./checkout-cookie";
 export { getOrderingAccess, type OrderingAccess } from "./ordering-access";
+export { readLastOrderId, rememberLastOrder } from "./last-order-cookie";

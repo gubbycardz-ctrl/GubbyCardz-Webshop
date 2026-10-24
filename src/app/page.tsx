@@ -3,9 +3,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { PRODUCT_KIND_LABELS } from "@/modules/catalog";
 import { getGames, getNewestProducts } from "@/modules/catalog/server";
 import { GameLinks } from "./game-links";
+import { ProductGrid } from "./product-grid";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
@@ -58,30 +58,12 @@ async function NewestProducts() {
   const [products, games] = await Promise.all([getNewestProducts(), getGames()]);
   if (products.length === 0) return null;
 
-  const gameNames = new Map(games.map((game) => [game.id, game.name]));
-
   return (
     <section className="mt-16" aria-labelledby="newest-heading">
       <h2 id="newest-heading" className="text-2xl font-bold">
         Neu im Sortiment
       </h2>
-      <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {products.map((product) => (
-          <li key={product.id}>
-            <Link
-              href={`/produkte/${product.slug}`}
-              className="flex h-full flex-col gap-1 rounded-xl border border-foreground/10 p-4 transition-colors hover:border-brand-blue"
-            >
-              <span className="text-xs font-medium uppercase tracking-wide text-foreground/60">
-                {[product.gameId && gameNames.get(product.gameId), PRODUCT_KIND_LABELS[product.kind]]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </span>
-              <span className="font-semibold">{product.name}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <ProductGrid products={products} games={games} />
     </section>
   );
 }

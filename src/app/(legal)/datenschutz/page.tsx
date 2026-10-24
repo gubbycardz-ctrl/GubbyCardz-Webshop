@@ -39,6 +39,10 @@ export default function PrivacyPage() {
           Bestellübersicht, höchstens 24 Stunden; wird beim Absenden der Bestellung gelöscht.
         </li>
         <li>
+          <strong>last-order</strong> – merkt sich die Nummer deiner gerade aufgegebenen Bestellung, damit nur du nach der
+          Bezahlung deine Bestellübersicht siehst, 24 Stunden.
+        </li>
+        <li>
           <strong>__session</strong> – nur für die Anmeldung von Shop-Mitarbeitern im Verwaltungsbereich, 5 Tage.
         </li>
       </ul>
