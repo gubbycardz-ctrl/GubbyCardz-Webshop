@@ -10,6 +10,7 @@ import {
   getOrderingAccess,
   getOrderRepository,
   readCheckoutCustomer,
+  rememberLastOrder,
   writeCheckoutCustomer,
 } from "@/modules/orders/server";
 import type { PaymentProvider } from "@/modules/payment";
@@ -61,6 +62,8 @@ export async function placeOrder(shownTotalCents: unknown): Promise<CheckoutStat
   // The cart comes back if the customer cancels the payment (see /kasse/abgebrochen).
   await writeCart([]);
   await clearCheckoutCustomer();
+  // The thank-you page shows the summary only in this browser.
+  await rememberLastOrder(result.order.id);
   redirect(paymentUrl);
 }
 
