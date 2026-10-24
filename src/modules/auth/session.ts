@@ -68,6 +68,12 @@ export async function requireAdmin(): Promise<SessionUser> {
   return user;
 }
 
+/** For pages and actions that only change their behavior for admins (instead of redirecting like requireAdmin). */
+export async function isAdminSession(): Promise<boolean> {
+  const user = await getSessionUser();
+  return user !== null && isAdmin(user, adminEmails());
+}
+
 export async function endSession() {
   const user = await getSessionUser();
   (await cookies()).delete(SESSION_COOKIE);

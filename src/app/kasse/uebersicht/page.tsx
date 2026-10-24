@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { getPricedCart } from "@/modules/cart/server";
 import { buildOrder, type Order } from "@/modules/orders";
-import { ORDERING_DISABLED_MESSAGE, isOrderingEnabled, readCheckoutCustomer } from "@/modules/orders/server";
+import { getOrderingAccess, readCheckoutCustomer } from "@/modules/orders/server";
 import { TAX_NOTE } from "@/modules/pricing";
 import { SHIPPING_COUNTRIES } from "@/modules/shipping";
 import { formatEuro } from "@/shared/money";
@@ -33,6 +33,7 @@ async function Overview() {
   const cart = await getPricedCart();
   if (cart.lines.length === 0 && cart.missingCount === 0) redirect("/warenkorb");
 
+  const access = await getOrderingAccess();
   // Same calculation as when ordering, so the overview shows exactly what will be charged.
   const preview = buildOrder({ id: "preview", now: new Date(), customer, cart });
   if (!preview.ok) {
@@ -52,11 +53,19 @@ async function Overview() {
     <div className="mt-6 flex flex-col gap-8">
       <ShippingAddress order={preview.order} />
       <OrderLines order={preview.order} />
-      <PlaceOrderButton
-        totalCents={preview.order.totalCents}
-        disabledReason={isOrderingEnabled() ? undefined : ORDERING_DISABLED_MESSAGE}
-      />
+      {access.open && access.testMode && <TestModeNote />}
+      <PlaceOrderButton totalCents={preview.order.totalCents} disabledReason={access.open ? undefined : access.reason} />
     </div>
+  );
+}
+
+/** Only admins see this: test payments are closed to customers (see ordering-access.ts). */
+function TestModeNote() {
+  return (
+    <p role="note" className="rounded-lg bg-brand-blue/10 px-4 py-3 text-sm">
+      <strong>Testmodus:</strong> Es wird kein echtes Geld abgebucht. Bezahle mit der Testkarte 4242 4242 4242 4242, einem
+      beliebigen Ablaufdatum in der Zukunft und einer beliebigen Prüfziffer.
+    </p>
   );
 }
 

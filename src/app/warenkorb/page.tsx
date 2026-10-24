@@ -15,14 +15,28 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-export default function CartPage() {
+export default function CartPage({ searchParams }: PageProps<"/warenkorb">) {
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-10">
       <h1 className="text-3xl font-bold">Warenkorb</h1>
+      <Suspense>
+        <PaymentCancelledNote searchParams={searchParams} />
+      </Suspense>
       <Suspense fallback={<p className="mt-6 text-foreground/60">Warenkorb wird geladen …</p>}>
         <CartContents />
       </Suspense>
     </main>
+  );
+}
+
+/** After leaving the payment page (see /kasse/abgebrochen). */
+async function PaymentCancelledNote({ searchParams }: Pick<PageProps<"/warenkorb">, "searchParams">) {
+  const { zahlung } = await searchParams;
+  if (zahlung !== "abgebrochen") return null;
+  return (
+    <p role="status" className="mt-4 rounded-lg bg-foreground/5 px-4 py-3 text-sm">
+      Die Bezahlung wurde abgebrochen – es wurde nichts berechnet. Deine Artikel liegen wieder im Warenkorb.
+    </p>
   );
 }
 
