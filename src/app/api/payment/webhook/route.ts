@@ -20,7 +20,10 @@ export async function POST(request: Request) {
   try {
     event = provider.parseWebhook(await request.text(), request.headers);
   } catch (error) {
-    if (error instanceof PaymentWebhookError) return new Response("Invalid signature", { status: 400 });
+    if (error instanceof PaymentWebhookError) {
+      console.warn(`Payment webhook rejected: ${error.message}`);
+      return new Response("Invalid signature", { status: 400 });
+    }
     throw error;
   }
   if (!event) return new Response(null, { status: 204 });
