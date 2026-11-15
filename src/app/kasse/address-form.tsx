@@ -58,7 +58,7 @@ export function AddressForm({ defaults }: { defaults: FormFields }) {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg bg-brand-blue px-5 py-2.5 font-medium text-white hover:opacity-90 disabled:opacity-50"
+          className="rounded-full bg-brand-blue px-6 py-2.5 font-semibold text-white transition hover:brightness-110 disabled:opacity-50"
         >
           {pending ? "Wird geprüft …" : "Weiter zur Bestellübersicht"}
         </button>

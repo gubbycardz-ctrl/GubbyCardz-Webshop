@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { describeProductKind, type Product } from "@/modules/catalog";
 import { getGame, getProductsOfGame } from "@/modules/catalog/server";
+import { ProductGrid } from "@/app/product-grid";
 
 export async function generateMetadata({ params }: PageProps<"/spiele/[gameId]">): Promise<Metadata> {
   const { gameId } = await params;
@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: PageProps<"/spiele/[gameId]">
 
 export default function GamePage({ params }: PageProps<"/spiele/[gameId]">) {
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-10">
+    <main className="mx-auto w-full max-w-6xl px-4 py-10">
       <Link href="/spiele" className="text-sm text-foreground/60 hover:text-brand-blue">
         ← Alle Spiele
       </Link>
@@ -39,31 +39,17 @@ async function GameProducts({ params }: Pick<PageProps<"/spiele/[gameId]">, "par
 
   return (
     <>
-      <h1 className="mt-2 text-3xl font-bold">{game.name}</h1>
+      <h1 className="mt-2 text-4xl font-bold tracking-tight">{game.name}</h1>
       {products.length === 0 ? (
         <p className="mt-6 text-foreground/60">Noch keine Produkte für dieses Spiel.</p>
       ) : (
-        <ul className="mt-6 divide-y divide-foreground/10 rounded-xl border border-foreground/10">
-          {products.map((product) => (
-            <li key={product.id}>
-              <Link
-                href={`/produkte/${product.slug}`}
-                className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-foreground/5"
-              >
-                <span>
-                  <span className="font-medium">{product.name}</span>
-                  <span className="block text-sm text-foreground/60">{productSubtitle(product)}</span>
-                </span>
-                <span className="shrink-0 text-sm text-foreground/60">{describeProductKind(product)}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <>
+          <p className="mt-1 text-sm text-foreground/60">
+            {products.length} {products.length === 1 ? "Produkt" : "Produkte"}
+          </p>
+          <ProductGrid products={products} games={[game]} />
+        </>
       )}
     </>
   );
-}
-
-function productSubtitle(product: Product) {
-  return product.kind === "single" ? `${product.collectorNumber} · ${product.rarity}` : "";
 }

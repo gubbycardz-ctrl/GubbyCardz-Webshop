@@ -1,15 +1,22 @@
 @import "tailwindcss";
 
-/* GubbyCardz brand colors, sampled from the logos in /assets. */
+/*
+ * GubbyCardz brand colors, sampled from the logos in /assets.
+ * The shop is always dark: card scans and product photos stand out best on a dark surface.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #111111;
+  --background: #0a0c11;
+  --surface: #12151d;
+  --foreground: #eef1f6;
   --brand-red: #fa000d;
   --brand-blue: #0095ff;
+  /* Native controls (selects, number inputs, scrollbars) follow the dark theme. */
+  color-scheme: dark;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
   --color-foreground: var(--foreground);
   --color-brand-red: var(--brand-red);
   --color-brand-blue: var(--brand-blue);
@@ -17,14 +24,47 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  color: var(--foreground);
+  background:
+    radial-gradient(60rem 28rem at 12% -8rem, rgb(0 149 255 / 0.14), transparent 65%),
+    radial-gradient(52rem 26rem at 92% -6rem, rgb(250 0 13 / 0.11), transparent 65%),
+    var(--background);
+  background-repeat: no-repeat;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
+/*
+ * Stand-in for a card scan or product photo (the catalog has no images yet).
+ * Trading-card proportions (63 × 88 mm), so real images can replace it without layout shifts.
+ */
+.card-art {
+  position: relative;
+  aspect-ratio: 63 / 88;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background:
+    linear-gradient(135deg, rgb(0 149 255 / 0.28), transparent 45%),
+    linear-gradient(315deg, rgb(250 0 13 / 0.24), transparent 45%),
+    #171b25;
+}
+
+/* Holo-style sheen that sweeps across the card when its tile is hovered. */
+.card-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 35%, rgb(255 255 255 / 0.16) 50%, transparent 65%);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.group:hover .card-art::after {
+  transform: translateX(100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-art::after {
+    display: none;
+  }
 }

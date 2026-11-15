@@ -14,7 +14,7 @@ export function PlaceOrderButton({ totalCents, disabledReason }: { totalCents: n
         type="button"
         disabled={pending || disabledReason !== undefined}
         onClick={() => startTransition(async () => setState(await placeOrder(totalCents)))}
-        className="rounded-lg bg-brand-red px-6 py-3 font-semibold text-white hover:opacity-90 disabled:opacity-50"
+        className="rounded-full bg-brand-red px-7 py-3 font-semibold text-white transition hover:brightness-110 disabled:opacity-50"
       >
         {pending ? "Weiter zur Bezahlung …" : "Zahlungspflichtig bestellen"}
       </button>

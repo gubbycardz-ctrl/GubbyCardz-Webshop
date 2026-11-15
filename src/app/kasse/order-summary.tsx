@@ -9,7 +9,7 @@ import { formatEuro } from "@/shared/money";
 export function OrderItems({ order }: { order: Order }) {
   return (
     <>
-      <ul className="mt-2 divide-y divide-foreground/10 rounded-xl border border-foreground/10">
+      <ul className="mt-2 divide-y divide-foreground/10 rounded-2xl border border-foreground/10 bg-surface">
         {order.lines.map((line) => (
           <li key={line.offerId} className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1 px-4 py-3">
             <span className="min-w-48 flex-1">

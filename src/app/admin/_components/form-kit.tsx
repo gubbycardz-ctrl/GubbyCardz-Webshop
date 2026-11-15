@@ -61,7 +61,7 @@ export function FormMessage({ state }: { state: FormState }) {
   }
   if (state.success) {
     return (
-      <p role="status" className="text-sm text-green-700 dark:text-green-400">
+      <p role="status" className="text-sm text-green-400">
         {state.success}
       </p>
     );
