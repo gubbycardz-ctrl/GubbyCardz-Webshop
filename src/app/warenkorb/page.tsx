@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 export default function CartPage({ searchParams }: PageProps<"/warenkorb">) {
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-10">
-      <h1 className="text-3xl font-bold">Warenkorb</h1>
+      <h1 className="text-3xl font-bold tracking-tight">Warenkorb</h1>
       <Suspense>
         <PaymentCancelledNote searchParams={searchParams} />
       </Suspense>
@@ -63,7 +63,7 @@ async function CartContents() {
             : `${cart.missingCount} Artikel sind nicht mehr im Sortiment und wurden nicht berücksichtigt.`}
         </p>
       )}
-      <ul className="mt-6 divide-y divide-foreground/10 rounded-xl border border-foreground/10">
+      <ul className="mt-6 divide-y divide-foreground/10 rounded-2xl border border-foreground/10 bg-surface">
         {cart.lines.map((line) => (
           <CartLineItem key={line.offer.id} line={line} />
         ))}
@@ -80,7 +80,7 @@ async function CartContents() {
           </p>
         ) : (
           cart.lines.length > 0 && (
-            <Link href="/kasse" className="mt-3 rounded-lg bg-brand-blue px-5 py-2.5 font-medium text-white hover:opacity-90">
+            <Link href="/kasse" className="mt-3 rounded-full bg-brand-blue px-6 py-2.5 font-semibold text-white transition hover:brightness-110">
               Zur Kasse
             </Link>
           )

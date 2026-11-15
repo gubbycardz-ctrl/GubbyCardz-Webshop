@@ -114,7 +114,7 @@ function Summary({ outcome }: { outcome: Extract<ImportOutcome, { ok: true }> })
     const { products, offers, failures } = outcome.written;
     return (
       <div role="status" className="text-sm">
-        <p className="font-medium text-green-700 dark:text-green-400">
+        <p className="font-medium text-green-400">
           Importiert: {offers} Artikel und {products} Produkte gespeichert.
         </p>
         {failures.length > 0 && (

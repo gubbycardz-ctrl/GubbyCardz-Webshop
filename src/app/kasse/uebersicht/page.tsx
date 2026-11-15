@@ -17,7 +17,7 @@ export default function OrderOverviewPage() {
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-10">
       <p className="text-sm text-foreground/60">Schritt 2 von 2</p>
-      <h1 className="text-3xl font-bold">Bestellübersicht</h1>
+      <h1 className="text-3xl font-bold tracking-tight">Bestellübersicht</h1>
       <Suspense fallback={<p className="mt-6 text-foreground/60">Wird geladen …</p>}>
         <Overview />
       </Suspense>
@@ -70,7 +70,7 @@ function TestModeNote() {
 function ShippingAddress({ order }: { order: Order }) {
   const { shippingAddress: address } = order;
   return (
-    <section className="rounded-xl border border-foreground/10 p-4">
+    <section className="rounded-2xl border border-foreground/10 bg-surface p-4">
       <div className="flex items-start justify-between gap-4">
         <h2 className="font-semibold">Lieferadresse</h2>
         <Link href="/kasse" className="text-sm text-brand-blue hover:underline">

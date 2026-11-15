@@ -15,7 +15,7 @@ export default function CheckoutPage() {
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-10">
       <p className="text-sm text-foreground/60">Schritt 1 von 2</p>
-      <h1 className="text-3xl font-bold">Lieferadresse</h1>
+      <h1 className="text-3xl font-bold tracking-tight">Lieferadresse</h1>
       <Suspense fallback={<p className="mt-6 text-foreground/60">Wird geladen …</p>}>
         <AddressStep />
       </Suspense>
