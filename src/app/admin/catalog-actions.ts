@@ -6,10 +6,10 @@ import {
   CatalogError,
   parseCardSetForm,
   parseGameForm,
+  parseNewProductForm,
   parseOfferForm,
   parseOfferInternalsForm,
   parseOfferUpdateForm,
-  parseProductForm,
   parseProductUpdateForm,
   type FormResult,
 } from "@/modules/catalog";
@@ -29,12 +29,25 @@ export async function createCardSet(_: FormState, formData: FormData): Promise<F
   return save(parseCardSetForm(formFieldsOf(formData)), (set) => getCatalogRepository().saveCardSet(set), "Set gespeichert.");
 }
 
+/** Creates the product and, if the form asks for it, its first offer – both or neither. */
 export async function createProduct(_: FormState, formData: FormData): Promise<FormState> {
   await requireAdmin();
-  const parsed = parseProductForm(formFieldsOf(formData), { id: crypto.randomUUID(), createdAt: new Date().toISOString() });
-  const state = await save(parsed, (product) => getCatalogRepository().saveProduct(product), "");
-  // Straight to the new product, where its offers are added.
-  if (!state.error && parsed.ok) redirect(`/admin/produkte/${parsed.value.id}`);
+  const parsed = parseNewProductForm(formFieldsOf(formData), {
+    productId: crypto.randomUUID(),
+    offerId: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+  });
+  const repository = getCatalogRepository();
+  const state = await save(
+    parsed,
+    ({ product, firstOffer }) =>
+      firstOffer
+        ? repository.saveProductWithOffer(product, firstOffer.offer, firstOffer.internals)
+        : repository.saveProduct(product),
+    "",
+  );
+  // Straight to the new product, where further offers are added.
+  if (!state.error && parsed.ok) redirect(`/admin/produkte/${parsed.value.product.id}`);
   return state;
 }
 

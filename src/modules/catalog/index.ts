@@ -24,6 +24,7 @@ export type { ImportOutcome } from "./catalog-import";
 export {
   parseCardSetForm,
   parseGameForm,
+  parseNewProductForm,
   parseOfferForm,
   parseOfferInternalsForm,
   parseOfferUpdateForm,
@@ -31,6 +32,7 @@ export {
   parseProductUpdateForm,
   type FormFields,
   type FormResult,
+  type NewProduct,
 } from "./admin-forms";
 export {
   CARD_LANGUAGES,

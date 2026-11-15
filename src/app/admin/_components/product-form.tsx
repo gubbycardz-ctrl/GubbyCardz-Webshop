@@ -4,10 +4,11 @@ import { useState } from "react";
 import { PRODUCT_KIND_LABELS, SEALED_CATEGORIES, type CardSet, type Game, type Product, type ProductKind } from "@/modules/catalog";
 import { createProduct, updateProduct } from "../catalog-actions";
 import { Field, FormMessage, SubmitButton, inputClass, useAdminForm } from "./form-kit";
+import { OfferFields } from "./offer-forms";
 
 const KINDS = Object.keys(PRODUCT_KIND_LABELS) as ProductKind[];
 
-/** Creates a new product, or edits `product` when given. */
+/** Creates a new product (with its first offer, unless switched off), or edits `product` when given. */
 export function ProductForm({
   games,
   sets,
@@ -23,6 +24,7 @@ export function ProductForm({
     resetOnSuccess: !product,
   });
   const [kind, setKind] = useState<ProductKind>(product?.kind ?? "single");
+  const [withOffer, setWithOffer] = useState(!product);
   const [gameId, setGameId] = useState(product ? (product.gameId ?? "") : (defaultGameId ?? games[0]?.id ?? ""));
   const setsOfGame = sets.filter((set) => set.gameId === gameId);
   const single = product?.kind === "single" ? product : undefined;
@@ -97,8 +99,27 @@ export function ProductForm({
           </Field>
         </>
       )}
+      {!product && (
+        <fieldset className="mt-2 rounded-xl border border-foreground/10 p-4 sm:col-span-2">
+          <legend className="px-1 text-sm font-semibold">Erstes Angebot</legend>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="withOffer" checked={withOffer} onChange={(event) => setWithOffer(event.target.checked)} />
+            Gleich ein Verkaufsangebot anlegen
+          </label>
+          {withOffer ? (
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              {/* A different product kind means different offer inputs, so start them afresh. */}
+              <OfferFields key={kind} productKind={kind} />
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-foreground/60">
+              Das Produkt wird ohne Angebot gespeichert – im Shop steht dann „Derzeit ausverkauft“. Angebote lassen sich später ergänzen.
+            </p>
+          )}
+        </fieldset>
+      )}
       <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
-        <SubmitButton pending={pending}>{product ? "Speichern" : "Produkt anlegen"}</SubmitButton>
+        <SubmitButton pending={pending}>{product ? "Speichern" : withOffer ? "Produkt und Angebot anlegen" : "Produkt anlegen"}</SubmitButton>
         <FormMessage state={state} />
         {kind === "single" && setsOfGame.length === 0 && (
           <p className="text-sm text-foreground/60">Für dieses Spiel gibt es noch kein Set – bitte zuerst im Admin-Bereich anlegen.</p>

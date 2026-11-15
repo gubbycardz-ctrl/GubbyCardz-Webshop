@@ -1,4 +1,4 @@
-import type { CollectionReference, DocumentData, DocumentSnapshot, Firestore, Query } from "firebase-admin/firestore";
+import type { CollectionReference, DocumentData, DocumentSnapshot, Firestore, Query, Transaction } from "firebase-admin/firestore";
 import { chunks } from "@/shared/chunks";
 import {
   CatalogError,
@@ -7,9 +7,9 @@ import {
   type CatalogRepository,
 } from "./catalog-repository";
 import { cardSetSchema, gameSchema, type CardSet } from "./game";
-import { isOfferTypeAllowedFor, offerSchema } from "./offer";
-import { offerInternalsSchema } from "./offer-internals";
-import { productSchema } from "./product";
+import { isOfferTypeAllowedFor, offerSchema, type Offer } from "./offer";
+import { offerInternalsSchema, type OfferInternals } from "./offer-internals";
+import { productSchema, type Product } from "./product";
 
 export const CATALOG_COLLECTIONS = {
   games: "games",
@@ -61,12 +61,7 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
     async saveProduct(product) {
       const valid = productSchema.parse(product);
       await db.runTransaction(async (transaction) => {
-        const sameSlug = await transaction.get(
-          products.where("slug", "==", valid.slug).limit(2),
-        );
-        if (sameSlug.docs.some((doc) => doc.id !== valid.id)) {
-          throw new CatalogError(`Es gibt schon ein Produkt unter /produkte/${valid.slug}`);
-        }
+        await assertSlugIsFree(transaction, valid);
         transaction.set(products.doc(valid.id), toDocument(valid));
       });
     },
@@ -106,26 +101,33 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
       const valid = offerSchema.parse(offer);
       const validInternals = internals && offerInternalsSchema.parse(internals);
       await db.runTransaction(async (transaction) => {
-        const [productDoc, sameSku] = await Promise.all([
+        const [productDoc] = await Promise.all([
           transaction.get(products.doc(valid.productId)),
-          validInternals?.sku ? transaction.get(offerInternals.where("sku", "==", validInternals.sku).limit(2)) : null,
+          assertSkuIsFree(transaction, valid, validInternals),
         ]);
         if (!productDoc.exists) {
           throw new CatalogError(`Produkt "${valid.productId}" existiert nicht`);
         }
-        const product = productSchema.parse(productDoc.data());
-        if (!isOfferTypeAllowedFor(product.kind, valid.type)) {
-          throw new CatalogError(
-            `Angebotsart "${valid.type}" passt nicht zu Produktart "${product.kind}"`,
-          );
-        }
-        if (sameSku?.docs.some((doc) => doc.id !== valid.id)) {
-          throw new CatalogError(`Die SKU ${validInternals?.sku} ist schon an ein anderes Angebot vergeben`);
-        }
-        transaction.set(offers.doc(valid.id), toDocument(valid));
-        if (validInternals) {
-          transaction.set(offerInternals.doc(valid.id), toDocument({ offerId: valid.id, ...validInternals }));
-        }
+        assertOfferFits(productSchema.parse(productDoc.data()), valid);
+        writeOffer(transaction, valid, validInternals);
+      });
+    },
+
+    async saveProductWithOffer(product, offer, internals) {
+      const validProduct = productSchema.parse(product);
+      const validOffer = offerSchema.parse(offer);
+      const validInternals = internals && offerInternalsSchema.parse(internals);
+      if (validOffer.productId !== validProduct.id) {
+        throw new CatalogError("Das Angebot gehört zu einem anderen Produkt");
+      }
+      assertOfferFits(validProduct, validOffer);
+      await db.runTransaction(async (transaction) => {
+        await Promise.all([
+          assertSlugIsFree(transaction, validProduct),
+          assertSkuIsFree(transaction, validOffer, validInternals),
+        ]);
+        transaction.set(products.doc(validProduct.id), toDocument(validProduct));
+        writeOffer(transaction, validOffer, validInternals);
       });
     },
 
@@ -209,12 +211,40 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
     },
   };
 
+  async function assertSlugIsFree(transaction: Transaction, product: Product) {
+    const sameSlug = await transaction.get(products.where("slug", "==", product.slug).limit(2));
+    if (sameSlug.docs.some((doc) => doc.id !== product.id)) {
+      throw new CatalogError(`Es gibt schon ein Produkt unter /produkte/${product.slug}`);
+    }
+  }
+
+  async function assertSkuIsFree(transaction: Transaction, offer: Offer, internals?: OfferInternals) {
+    if (!internals?.sku) return;
+    const sameSku = await transaction.get(offerInternals.where("sku", "==", internals.sku).limit(2));
+    if (sameSku.docs.some((doc) => doc.id !== offer.id)) {
+      throw new CatalogError(`Die SKU ${internals.sku} ist schon an ein anderes Angebot vergeben`);
+    }
+  }
+
+  function writeOffer(transaction: Transaction, offer: Offer, internals?: OfferInternals) {
+    transaction.set(offers.doc(offer.id), toDocument(offer));
+    if (internals) {
+      transaction.set(offerInternals.doc(offer.id), toDocument({ offerId: offer.id, ...internals }));
+    }
+  }
+
   async function getAllByIds(collection: CollectionReference, ids: readonly string[]): Promise<DocumentSnapshot[]> {
     const uniqueIds = [...new Set(ids)];
     if (uniqueIds.length === 0) return [];
     if (uniqueIds.length > MAX_PAGE_SIZE) throw new CatalogError(`Höchstens ${MAX_PAGE_SIZE} Einträge auf einmal`);
     const snapshots = await db.getAll(...uniqueIds.map((id) => collection.doc(id)));
     return snapshots.filter((snapshot) => snapshot.exists);
+  }
+}
+
+function assertOfferFits(product: Product, offer: Offer) {
+  if (!isOfferTypeAllowedFor(product.kind, offer.type)) {
+    throw new CatalogError(`Angebotsart "${offer.type}" passt nicht zu Produktart "${product.kind}"`);
   }
 }
 
