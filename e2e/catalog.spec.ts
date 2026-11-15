@@ -13,8 +13,8 @@ test("visitors find a card from the game list", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Glurak ex" })).toBeVisible();
   await expect(page.getByText("Karmesin & Purpur – 151 (MEW)")).toBeVisible();
   await expect(page.getByText(/119,99\s€/)).toBeVisible();
-  // Legally required price note (PAngV).
-  await expect(page.getByText(/zzgl\. Versandkosten/i)).toBeVisible();
+  // Legally required price note (PAngV). The game list, kept hidden by Next.js, shows one too.
+  await expect(page.getByText(/zzgl\. Versandkosten/i).filter({ visible: true })).toBeVisible();
 });
 
 test("sold-out products cannot be bought", async ({ page }) => {

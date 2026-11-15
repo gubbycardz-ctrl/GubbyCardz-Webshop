@@ -14,7 +14,7 @@ export function AddToCartButton({ offerId }: { offerId: string }) {
         type="button"
         disabled={pending}
         onClick={() => startTransition(async () => setState(await addToCart(offerId)))}
-        className="rounded-lg bg-brand-blue px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+        className="rounded-full bg-brand-red px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
       >
         {pending ? "Wird hinzugefügt …" : "In den Warenkorb"}
       </button>
