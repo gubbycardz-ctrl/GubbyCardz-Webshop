@@ -1,4 +1,4 @@
-import type { CollectionReference, DocumentData, DocumentSnapshot, Firestore, Query } from "firebase-admin/firestore";
+import type { CollectionReference, DocumentData, DocumentSnapshot, Firestore, Query, Transaction } from "firebase-admin/firestore";
 import { chunks } from "@/shared/chunks";
 import {
   CatalogError,
@@ -7,9 +7,9 @@ import {
   type CatalogRepository,
 } from "./catalog-repository";
 import { cardSetSchema, gameSchema, type CardSet } from "./game";
-import { isOfferTypeAllowedFor, offerSchema } from "./offer";
-import { offerInternalsSchema } from "./offer-internals";
-import { productSchema } from "./product";
+import { isOfferTypeAllowedFor, offerSchema, type Offer } from "./offer";
+import { offerInternalsSchema, type OfferInternals } from "./offer-internals";
+import { isShopVisible, productSchema, type Product } from "./product";
 
 export const CATALOG_COLLECTIONS = {
   games: "games",
@@ -23,6 +23,9 @@ export const CATALOG_COLLECTIONS = {
 // Upper bounds for lists that are not paginated, so a list can never grow unbounded.
 const MAX_GAMES = 50;
 const MAX_CARD_SETS_PER_GAME = 500;
+// Hidden products cannot be filtered in the query ("absent = visible" has no Firestore equivalent),
+// so lists read on until enough visible ones are found – at most this many pages of MAX_PAGE_SIZE.
+const MAX_SCAN_PAGES = 5;
 // Firestore allows at most 30 values in an "in" filter.
 const MAX_IN_FILTER_VALUES = 30;
 
@@ -61,12 +64,7 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
     async saveProduct(product) {
       const valid = productSchema.parse(product);
       await db.runTransaction(async (transaction) => {
-        const sameSlug = await transaction.get(
-          products.where("slug", "==", valid.slug).limit(2),
-        );
-        if (sameSlug.docs.some((doc) => doc.id !== valid.id)) {
-          throw new CatalogError(`Es gibt schon ein Produkt unter /produkte/${valid.slug}`);
-        }
+        await assertSlugIsFree(transaction, valid);
         transaction.set(products.doc(valid.id), toDocument(valid));
       });
     },
@@ -82,50 +80,49 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
       return doc.exists ? productSchema.parse(doc.data()) : null;
     },
 
-    async listProducts({ gameId, kind, limit = DEFAULT_PAGE_SIZE }) {
+    async listProducts({ gameId, kind, limit = DEFAULT_PAGE_SIZE, includeHidden = false }) {
       let query: Query = products;
       if (gameId) query = query.where("gameId", "==", gameId);
       if (kind) query = query.where("kind", "==", kind);
-      const snapshot = await query
-        .orderBy("name")
-        .limit(Math.min(limit, MAX_PAGE_SIZE))
-        .get();
-      return snapshot.docs.map((doc) => productSchema.parse(doc.data()));
+      return readProducts(query.orderBy("name"), Math.min(limit, MAX_PAGE_SIZE), includeHidden);
     },
 
     async listNewestProducts(limit) {
       // Single-field ordering: covered by Firestore's automatic index, no composite index needed.
-      const snapshot = await products
-        .orderBy("createdAt", "desc")
-        .limit(Math.min(limit, MAX_PAGE_SIZE))
-        .get();
-      return snapshot.docs.map((doc) => productSchema.parse(doc.data()));
+      return readProducts(products.orderBy("createdAt", "desc"), Math.min(limit, MAX_PAGE_SIZE), false);
     },
 
     async saveOffer(offer, internals) {
       const valid = offerSchema.parse(offer);
       const validInternals = internals && offerInternalsSchema.parse(internals);
       await db.runTransaction(async (transaction) => {
-        const [productDoc, sameSku] = await Promise.all([
+        const [productDoc] = await Promise.all([
           transaction.get(products.doc(valid.productId)),
-          validInternals?.sku ? transaction.get(offerInternals.where("sku", "==", validInternals.sku).limit(2)) : null,
+          assertSkuIsFree(transaction, valid, validInternals),
         ]);
         if (!productDoc.exists) {
           throw new CatalogError(`Produkt "${valid.productId}" existiert nicht`);
         }
-        const product = productSchema.parse(productDoc.data());
-        if (!isOfferTypeAllowedFor(product.kind, valid.type)) {
-          throw new CatalogError(
-            `Angebotsart "${valid.type}" passt nicht zu Produktart "${product.kind}"`,
-          );
-        }
-        if (sameSku?.docs.some((doc) => doc.id !== valid.id)) {
-          throw new CatalogError(`Die SKU ${validInternals?.sku} ist schon an ein anderes Angebot vergeben`);
-        }
-        transaction.set(offers.doc(valid.id), toDocument(valid));
-        if (validInternals) {
-          transaction.set(offerInternals.doc(valid.id), toDocument({ offerId: valid.id, ...validInternals }));
-        }
+        assertOfferFits(productSchema.parse(productDoc.data()), valid);
+        writeOffer(transaction, valid, validInternals);
+      });
+    },
+
+    async saveProductWithOffer(product, offer, internals) {
+      const validProduct = productSchema.parse(product);
+      const validOffer = offerSchema.parse(offer);
+      const validInternals = internals && offerInternalsSchema.parse(internals);
+      if (validOffer.productId !== validProduct.id) {
+        throw new CatalogError("Das Angebot gehört zu einem anderen Produkt");
+      }
+      assertOfferFits(validProduct, validOffer);
+      await db.runTransaction(async (transaction) => {
+        await Promise.all([
+          assertSlugIsFree(transaction, validProduct),
+          assertSkuIsFree(transaction, validOffer, validInternals),
+        ]);
+        transaction.set(products.doc(validProduct.id), toDocument(validProduct));
+        writeOffer(transaction, validOffer, validInternals);
       });
     },
 
@@ -209,12 +206,58 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
     },
   };
 
+  /** Reads an ordered query page by page until `wanted` products qualify (see MAX_SCAN_PAGES). */
+  async function readProducts(ordered: Query, wanted: number, includeHidden: boolean): Promise<Product[]> {
+    // Nothing is skipped when hidden products are wanted, so no more than needed is read.
+    const pageSize = includeHidden ? wanted : MAX_PAGE_SIZE;
+    const found: Product[] = [];
+    let cursor: DocumentSnapshot | undefined;
+    for (let page = 0; page < MAX_SCAN_PAGES && found.length < wanted; page++) {
+      const snapshot = await (cursor ? ordered.startAfter(cursor) : ordered).limit(pageSize).get();
+      for (const doc of snapshot.docs) {
+        const product = productSchema.parse(doc.data());
+        if (found.length < wanted && (includeHidden || isShopVisible(product))) found.push(product);
+      }
+      if (snapshot.size < pageSize) break;
+      cursor = snapshot.docs.at(-1);
+    }
+    return found;
+  }
+
+  async function assertSlugIsFree(transaction: Transaction, product: Product) {
+    const sameSlug = await transaction.get(products.where("slug", "==", product.slug).limit(2));
+    if (sameSlug.docs.some((doc) => doc.id !== product.id)) {
+      throw new CatalogError(`Es gibt schon ein Produkt unter /produkte/${product.slug}`);
+    }
+  }
+
+  async function assertSkuIsFree(transaction: Transaction, offer: Offer, internals?: OfferInternals) {
+    if (!internals?.sku) return;
+    const sameSku = await transaction.get(offerInternals.where("sku", "==", internals.sku).limit(2));
+    if (sameSku.docs.some((doc) => doc.id !== offer.id)) {
+      throw new CatalogError(`Die SKU ${internals.sku} ist schon an ein anderes Angebot vergeben`);
+    }
+  }
+
+  function writeOffer(transaction: Transaction, offer: Offer, internals?: OfferInternals) {
+    transaction.set(offers.doc(offer.id), toDocument(offer));
+    if (internals) {
+      transaction.set(offerInternals.doc(offer.id), toDocument({ offerId: offer.id, ...internals }));
+    }
+  }
+
   async function getAllByIds(collection: CollectionReference, ids: readonly string[]): Promise<DocumentSnapshot[]> {
     const uniqueIds = [...new Set(ids)];
     if (uniqueIds.length === 0) return [];
     if (uniqueIds.length > MAX_PAGE_SIZE) throw new CatalogError(`Höchstens ${MAX_PAGE_SIZE} Einträge auf einmal`);
     const snapshots = await db.getAll(...uniqueIds.map((id) => collection.doc(id)));
     return snapshots.filter((snapshot) => snapshot.exists);
+  }
+}
+
+function assertOfferFits(product: Product, offer: Offer) {
+  if (!isOfferTypeAllowedFor(product.kind, offer.type)) {
+    throw new CatalogError(`Angebotsart "${offer.type}" passt nicht zu Produktart "${product.kind}"`);
   }
 }
 

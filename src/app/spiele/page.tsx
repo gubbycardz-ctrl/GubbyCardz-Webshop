@@ -10,8 +10,8 @@ export const metadata: Metadata = {
 
 export default function GamesPage() {
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-10">
-      <h1 className="text-3xl font-bold">Spiele</h1>
+    <main className="mx-auto w-full max-w-6xl px-4 py-10">
+      <h1 className="text-3xl font-extrabold uppercase italic tracking-tight sm:text-4xl">Spiele</h1>
       <Suspense fallback={<p className="mt-6 text-foreground/60">Spiele werden geladen …</p>}>
         <GameLinks />
       </Suspense>

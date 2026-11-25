@@ -49,9 +49,13 @@ async function ProductWithOffers({ params }: Pick<PageProps<"/admin/produkte/[id
           {describeProductKind(product)}
           {product.kind === "single" && ` · ${product.collectorNumber} · ${product.rarity}`}
           {" · "}
-          <Link href={`/produkte/${product.slug}`} className="text-brand-blue hover:underline">
-            Im Shop ansehen
-          </Link>
+          {product.hidden ? (
+            <span className="font-medium text-foreground">Unsichtbar – im Shop nicht zu sehen und nicht kaufbar</span>
+          ) : (
+            <Link href={`/produkte/${product.slug}`} className="text-brand-blue hover:underline">
+              Im Shop ansehen
+            </Link>
+          )}
         </p>
       </section>
 

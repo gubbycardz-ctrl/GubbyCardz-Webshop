@@ -1,6 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
+import { isShopVisible } from "@/modules/catalog";
 import { getCatalogRepository } from "@/modules/catalog/server";
 import { parseCart, serializeCart, type Cart } from "./cart";
 import { priceCart, type PricedCart } from "./priced-cart";
@@ -39,7 +40,8 @@ export async function getPricedCart(): Promise<PricedCart> {
   await connection();
   const catalog = getCatalogRepository();
   const offers = await catalog.getOffersByIds(cart.map((line) => line.offerId));
-  const products = await catalog.getProductsByIds(offers.map((offer) => offer.productId));
+  // Offers of hidden products count as gone: they are neither priced nor ordered.
+  const products = (await catalog.getProductsByIds(offers.map((offer) => offer.productId))).filter(isShopVisible);
   return priceCart(
     cart,
     new Map(offers.map((offer) => [offer.id, offer])),

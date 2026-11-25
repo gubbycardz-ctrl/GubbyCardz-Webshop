@@ -3,7 +3,7 @@ import { TAX_SCHEMES } from "@/modules/pricing";
 import { optionalText, text, validateForm, type FormFields, type FormResult } from "@/shared/form-validation";
 import { parseEuroToCents } from "@/shared/money";
 import { cardSetSchema, gameSchema, type CardSet, type Game } from "./game";
-import { offerSchema, type Offer } from "./offer";
+import { isOfferTypeAllowedFor, offerSchema, type Offer } from "./offer";
 import { offerInternalsSchema, type OfferInternals } from "./offer-internals";
 import { productSchema, productSlug, type Product, type ProductKind } from "./product";
 import { toSlug } from "./slug";
@@ -23,6 +23,7 @@ export const FIELD_LABELS: Record<string, string> = {
   code: "Set-Code",
   releaseDate: "Erscheinungsdatum",
   kind: "Produktart",
+  hidden: "Sichtbarkeit",
   collectorNumber: "Nummer",
   rarity: "Seltenheit",
   type: "Angebotsart",
@@ -78,6 +79,9 @@ export function parseProductForm(
     gameId: optionalText(fields.gameId),
     setId: optionalText(fields.setId),
     createdAt,
+    // A ticked checkbox sends a value, an unticked one nothing: forms that do not know the
+    // field keep creating visible products, as before.
+    ...(text(fields.hidden) && { hidden: true }),
   };
 
   const slug = productSlug({ kind, name, collectorNumber });
@@ -86,6 +90,31 @@ export function parseProductForm(
       ? { ...common, slug, collectorNumber, rarity: text(fields.rarity) }
       : { ...common, slug, ...(kind === "sealed" && { category: text(fields.category) }) };
   return validateForm(productSchema, candidate, FIELD_LABELS);
+}
+
+export type NewProduct = { product: Product; firstOffer?: { offer: Offer; internals: OfferInternals } };
+
+/**
+ * A new product, optionally with its first offer from the same form (checkbox `withOffer`).
+ * Problems of both parts are reported together, so the admin fixes them in one go.
+ */
+export function parseNewProductForm(
+  fields: FormFields,
+  { productId, offerId, createdAt }: { productId: string; offerId: string; createdAt: string },
+): FormResult<NewProduct> {
+  const product = parseProductForm(fields, { id: productId, createdAt });
+  if (!text(fields.withOffer)) return product.ok ? { ok: true, value: { product: product.value } } : product;
+
+  const offer = parseOfferForm(fields, { id: offerId, productId });
+  const internals = parseOfferInternalsForm(fields);
+  if (!product.ok || !offer.ok || !internals.ok) {
+    const errors = [product, offer, internals].flatMap((result) => (result.ok ? [] : [result.error]));
+    return { ok: false, error: errors.join(" · ") };
+  }
+  if (!isOfferTypeAllowedFor(product.value.kind, offer.value.type)) {
+    return { ok: false, error: "Angebotsart: passt nicht zur Produktart" };
+  }
+  return { ok: true, value: { product: product.value, firstOffer: { offer: offer.value, internals: internals.value } } };
 }
 
 /** Edits an existing product. The kind stays fixed, because its offers were made for that kind. */

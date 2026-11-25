@@ -28,7 +28,13 @@ export type ImportContext = {
   productsBySlug: ReadonlyMap<string, Product>;
 };
 
-export type ImportOptions = { overwriteStock: boolean; newId: () => string; now: string };
+export type ImportOptions = {
+  overwriteStock: boolean;
+  /** New products are created hidden, to be checked and published in the admin area. Existing ones are never touched. */
+  hideNewProducts?: boolean;
+  newId: () => string;
+  now: string;
+};
 
 export type ImportRowStatus = "create" | "update" | "unchanged" | "error";
 export type ImportRowResult = { line: number; sku: string; name: string; status: ImportRowStatus; messages: string[] };
@@ -176,6 +182,7 @@ export function planImport(
       rarity: row.rarity,
       category: row.category,
       createdAt: options.now,
+      ...(options.hideNewProducts && { hidden: true }),
     };
     const product = validateForm(productSchema, candidate, FIELD_LABELS);
     if (!product.ok) {

@@ -2,7 +2,7 @@
 
 import { MAX_CART_LINES, isOfferId, quantityOf, setQuantity } from "@/modules/cart";
 import { readCart, writeCart } from "@/modules/cart/server";
-import { getCatalogRepository } from "@/modules/catalog/server";
+import { getSellableOffers } from "@/modules/catalog/server";
 
 export type AddToCartState = { error?: string; success?: string };
 
@@ -10,7 +10,7 @@ export async function addToCart(offerId: unknown): Promise<AddToCartState> {
   if (!isOfferId(offerId)) return { error: "Dieses Angebot gibt es nicht mehr." };
 
   // Checked against fresh stock – the product page itself may be cached for a few minutes.
-  const [offer] = await getCatalogRepository().getOffersByIds([offerId]);
+  const [offer] = await getSellableOffers([offerId]);
   if (!offer || offer.stock === 0) return { error: "Leider gerade ausverkauft." };
 
   const cart = await readCart();
@@ -29,7 +29,7 @@ export async function changeQuantity(offerId: unknown, formData: FormData) {
   if (!Number.isInteger(requested)) return;
 
   // Never store more than is in stock; the cart page shows what was available.
-  const [offer] = await getCatalogRepository().getOffersByIds([offerId]);
+  const [offer] = await getSellableOffers([offerId]);
   const result = setQuantity(await readCart(), offerId, Math.min(requested, offer?.stock ?? 0));
   if (result.ok) await writeCart(result.cart);
 }

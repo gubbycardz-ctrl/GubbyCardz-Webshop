@@ -13,8 +13,8 @@ test("visitors find a card from the game list", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Glurak ex" })).toBeVisible();
   await expect(page.getByText("Karmesin & Purpur – 151 (MEW)")).toBeVisible();
   await expect(page.getByText(/119,99\s€/)).toBeVisible();
-  // Legally required price note (PAngV).
-  await expect(page.getByText(/zzgl\. Versandkosten/i)).toBeVisible();
+  // Legally required price note (PAngV). The game list, kept hidden by Next.js, shows one too.
+  await expect(page.getByText(/zzgl\. Versandkosten/i).filter({ visible: true })).toBeVisible();
 });
 
 test("sold-out products cannot be bought", async ({ page }) => {
@@ -30,4 +30,22 @@ test("unknown products show the not-found page", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Seite nicht gefunden" })).toBeVisible();
   // The page streams, so the status is already 200 – search engines rely on noindex instead.
   await expect(page.locator('meta[name="robots"][content*="noindex"]').first()).toBeAttached();
+});
+
+test("hidden products appear nowhere in the shop", async ({ page, request }) => {
+  // The seed data contains a hidden product ("Entwurf Tin") with stock.
+  await page.goto("/produkte/entwurf-tin");
+  await expect(page.getByRole("heading", { name: "Seite nicht gefunden" })).toBeVisible();
+
+  await page.goto("/spiele/pokemon");
+  await expect(page.getByRole("heading", { level: 1, name: "Pokémon" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Glurak ex/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Entwurf Tin/ })).toHaveCount(0);
+
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: /Entwurf Tin/ })).toHaveCount(0);
+
+  const sitemap = await (await request.get("/sitemap.xml")).text();
+  expect(sitemap).toContain("glurak-ex-199-165");
+  expect(sitemap).not.toContain("entwurf-tin");
 });

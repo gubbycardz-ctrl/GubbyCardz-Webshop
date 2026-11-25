@@ -3,6 +3,7 @@ import { getFirestore, type Firestore } from "firebase-admin/firestore";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { CatalogError, type CatalogRepository, type Offer, type OfferInternals, type Product } from ".";
 import { createFirestoreCatalogRepository } from "./firestore-catalog-repository";
+import { getSellableOffers } from "./shop-offers";
 
 const PROJECT_ID = "demo-gubbycardz";
 
@@ -259,6 +260,87 @@ describe("offers", () => {
 
     await expect(repository.saveOffer(gradedDisplay)).rejects.toThrow(CatalogError);
     expect(await repository.listOffers(display.id)).toEqual([]);
+  });
+});
+
+describe("product with its first offer", () => {
+  const internals: OfferInternals = { sku: "PKM-199-DE", purchasePriceCents: 2500, origin: "private" };
+
+  it("saves product, offer and internals together", async () => {
+    await repository.saveProductWithOffer(charizard, nearMintOffer, internals);
+
+    expect(await repository.getProductById(charizard.id)).toEqual(charizard);
+    expect(await repository.listOffers(charizard.id)).toEqual([nearMintOffer]);
+    expect((await repository.getOfferInternals([nearMintOffer.id])).get(nearMintOffer.id)).toMatchObject(internals);
+  });
+
+  it("writes nothing when the SKU is already taken", async () => {
+    await repository.saveProductWithOffer(display, { id: "o-display", productId: display.id, type: "sealed", language: "ja", priceCents: 12999, stock: 1 }, internals);
+
+    await expect(repository.saveProductWithOffer(charizard, nearMintOffer, internals)).rejects.toThrow(CatalogError);
+    expect(await repository.getProductById(charizard.id)).toBeNull();
+    expect(await repository.listOffers(charizard.id)).toEqual([]);
+  });
+
+  it("writes nothing when the slug is already taken", async () => {
+    await repository.saveProduct({ ...charizard, id: "p-other" });
+
+    await expect(repository.saveProductWithOffer(charizard, nearMintOffer)).rejects.toThrow(CatalogError);
+    expect(await repository.listOffers(charizard.id)).toEqual([]);
+  });
+
+  it("rejects an offer that does not fit the product or belongs to another one", async () => {
+    await expect(repository.saveProductWithOffer(display, { ...nearMintOffer, productId: display.id })).rejects.toThrow(CatalogError);
+    await expect(repository.saveProductWithOffer(display, nearMintOffer)).rejects.toThrow(CatalogError);
+    expect(await repository.getProductById(display.id)).toBeNull();
+  });
+});
+
+describe("hidden products", () => {
+  const draft: Product = { ...display, id: "p-draft", name: "Entwurf Display", slug: "entwurf-display", gameId: "pokemon", hidden: true, createdAt: "2026-02-01T00:00:00.000Z" };
+  const draftOffer: Offer = { id: "o-draft", productId: draft.id, type: "sealed", language: "de", priceCents: 9999, stock: 4 };
+  const names = (products: Product[]) => products.map((product) => product.name);
+
+  it("keeps hidden products out of shop lists but finds them for the admin area", async () => {
+    await repository.saveProduct({ ...charizard, createdAt: "2026-01-01T00:00:00.000Z" });
+    await repository.saveProduct(draft);
+
+    expect(names(await repository.listProducts({ gameId: "pokemon" }))).toEqual(["Glurak ex"]);
+    expect(names(await repository.listProducts({ gameId: "pokemon", includeHidden: true }))).toEqual(["Entwurf Display", "Glurak ex"]);
+    expect(names(await repository.listNewestProducts(8))).toEqual(["Glurak ex"]);
+    // Single lookups stay unfiltered: the admin area edits drafts, and the shop checks visibility itself.
+    expect(await repository.getProductBySlug(draft.slug)).toMatchObject({ hidden: true });
+  });
+
+  it("finds visible products behind many hidden ones", async () => {
+    // Hidden ones sort first by name; a plain limit would return nothing at all.
+    const hidden = Array.from({ length: 105 }, (_, index) => ({ ...draft, id: `h-${index}`, name: `A draft ${index}`, slug: `a-draft-${index}` }));
+    // One batch instead of 105 competing transactions; the products are plain test fixtures.
+    const batch = db.batch();
+    hidden.forEach((product) => batch.set(db.collection("products").doc(product.id), product));
+    await batch.commit();
+    await repository.saveProduct({ ...charizard, name: "Zacian", slug: "zacian", createdAt: "2026-01-01T00:00:00.000Z" });
+
+    expect(names(await repository.listProducts({ gameId: "pokemon" }))).toEqual(["Zacian"]);
+    expect(names(await repository.listNewestProducts(8))).toEqual(["Zacian"]);
+  }, 30_000);
+
+  it("publishes a draft again when it is saved without the flag", async () => {
+    await repository.saveProduct(draft);
+    await repository.saveProduct({ ...draft, hidden: undefined });
+
+    expect(names(await repository.listProducts({ gameId: "pokemon" }))).toEqual(["Entwurf Display"]);
+  });
+
+  it("does not offer the offers of hidden products for sale", async () => {
+    await repository.saveProduct(charizard);
+    await repository.saveOffer(nearMintOffer);
+    await repository.saveProduct(draft);
+    await repository.saveOffer(draftOffer);
+
+    const sellable = await getSellableOffers([nearMintOffer.id, draftOffer.id, "unknown"], repository);
+    expect(sellable.map((offer) => offer.id)).toEqual([nearMintOffer.id]);
+    expect((await repository.getOffersByIds([draftOffer.id]))).toHaveLength(1);
   });
 });
 

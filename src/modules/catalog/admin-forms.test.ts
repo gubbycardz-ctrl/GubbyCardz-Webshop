@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   parseCardSetForm,
   parseGameForm,
+  parseNewProductForm,
   parseOfferForm,
   parseOfferInternalsForm,
   parseOfferUpdateForm,
@@ -125,6 +126,42 @@ describe("parseProductUpdateForm", () => {
   });
 });
 
+describe("parseNewProductForm", () => {
+  const ids = { productId: "p1", offerId: "o1", createdAt: "2026-01-01T00:00:00.000Z" };
+  const sleeves = { kind: "accessory", name: "Sleeves schwarz" };
+  const firstOffer = { withOffer: "on", type: "accessory", price: "8,99", stock: "20", taxScheme: "standard", purchasePrice: "4,50", origin: "commercial" };
+
+  it("builds the product with its first offer and the internal data", () => {
+    const result = parseNewProductForm({ ...sleeves, ...firstOffer, sku: "acc-1" }, ids);
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        product: { id: "p1", kind: "accessory", name: "Sleeves schwarz", slug: "sleeves-schwarz", createdAt: ids.createdAt },
+        firstOffer: {
+          offer: { id: "o1", productId: "p1", type: "accessory", priceCents: 899, stock: 20, taxScheme: "standard" },
+          internals: { sku: "ACC-1", purchasePriceCents: 450, origin: "commercial" },
+        },
+      },
+    });
+  });
+
+  it("builds only the product when no offer is wanted, ignoring offer fields", () => {
+    const result = parseNewProductForm({ ...sleeves, price: "kaputt" }, ids);
+    expect(result).toMatchObject({ ok: true, value: { product: { id: "p1" } } });
+    expect(result.ok && result.value.firstOffer).toBeUndefined();
+  });
+
+  it("reports problems of product and offer together", () => {
+    const result = parseNewProductForm({ ...sleeves, ...firstOffer, name: "", stock: "", origin: "" }, ids);
+    expect(result).toEqual({ ok: false, error: "Name: bitte ausfüllen · Bestand: bitte ausfüllen · Herkunft: bitte ausfüllen" });
+  });
+
+  it("rejects an offer type that does not fit the product kind", () => {
+    const result = parseNewProductForm({ ...sleeves, ...firstOffer, type: "sealed", language: "de" }, ids);
+    expect(result).toEqual({ ok: false, error: "Angebotsart: passt nicht zur Produktart" });
+  });
+});
+
 describe("parseOfferForm", () => {
   const ids = { id: "o1", productId: "p1" };
 
@@ -207,5 +244,22 @@ describe("parseOfferInternalsForm", () => {
       ok: false,
       error: "SKU: Nur Großbuchstaben, Ziffern und . _ / -",
     });
+  });
+});
+
+describe("parseProductForm – visibility", () => {
+  const sleeves = { kind: "accessory", name: "Sleeves schwarz" };
+  const ids = { id: "p1", createdAt: "2026-01-01T00:00:00.000Z" };
+
+  it("creates visible products unless the hidden box is ticked", () => {
+    const result = parseProductForm(sleeves, ids);
+    expect(result.ok && result.value).not.toHaveProperty("hidden");
+    expect(parseProductForm({ ...sleeves, hidden: "on" }, ids)).toMatchObject({ ok: true, value: { hidden: true } });
+  });
+
+  it("lets an edit publish a hidden product again by leaving the box unticked", () => {
+    const hidden: Product = { id: "p1", kind: "accessory", name: "Sleeves schwarz", slug: "sleeves-schwarz", hidden: true };
+    const result = parseProductUpdateForm({ name: "Sleeves schwarz" }, hidden);
+    expect(result.ok && result.value).not.toHaveProperty("hidden");
   });
 });

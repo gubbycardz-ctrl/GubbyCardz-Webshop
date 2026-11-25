@@ -72,6 +72,25 @@ describe("product import", () => {
     expect(await repository.listProducts({ gameId: "pokemon" })).toHaveLength(2);
   }, IMPORT_TEST_TIMEOUT_MS);
 
+  it("creates new products hidden on request and leaves existing products untouched", async () => {
+    await runCatalogImport(file, { overwriteStock: false }, repository);
+    const visibleBundle = await repository.getProductBySlug("testbundle");
+    expect(visibleBundle).not.toHaveProperty("hidden");
+
+    // Same file, new SKUs would be new offers; here: drop the products and import hidden.
+    await Promise.all(["testbundle", "testkarte-14-102", "testzubehoer"].map(async (slug) => {
+      const product = await repository.getProductBySlug(slug);
+      if (product) await repository.deleteProduct(product.id);
+    }));
+    const imported = await runCatalogImport(file, { overwriteStock: false, hideNewProducts: true }, repository);
+    expect(imported).toMatchObject({ ok: true, written: { failures: [] } });
+
+    const products = await repository.listProducts({ gameId: "pokemon", includeHidden: true });
+    expect(products.length).toBeGreaterThan(0);
+    expect(products.every((product) => product.hidden === true)).toBe(true);
+    expect(await repository.listProducts({ gameId: "pokemon" })).toEqual([]);
+  }, IMPORT_TEST_TIMEOUT_MS);
+
   it("writes nothing while a row has an error", async () => {
     await repository.deleteCardSet("pokemon-tst");
     const result = await runCatalogImport(file, { overwriteStock: false }, repository);

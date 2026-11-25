@@ -7,7 +7,7 @@ export {
   type CatalogRepository,
 } from "./catalog-repository";
 export { gameSchema, cardSetSchema, slugSchema, type Game, type CardSet } from "./game";
-export { productSchema, type Product, type ProductKind } from "./product";
+export { isShopVisible, productSchema, type Product, type ProductKind } from "./product";
 export { offerSchema, isOfferTypeAllowedFor, type Offer, type OfferType } from "./offer";
 export {
   offerInternalsSchema,
@@ -17,6 +17,7 @@ export {
   type OfferInternals,
   type PurchaseOrigin,
 } from "./offer-internals";
+export { rarityTier, type RarityTier } from "./rarity";
 export { PRODUCT_KIND_LABELS, describeOffer, describeProductKind } from "./labels";
 export { IMPORT_COLUMNS, MAX_IMPORT_FILE_BYTES, MAX_IMPORT_ROWS } from "./import-rows";
 export type { ImportRowResult, ImportRowStatus } from "./import-plan";
@@ -24,6 +25,7 @@ export type { ImportOutcome } from "./catalog-import";
 export {
   parseCardSetForm,
   parseGameForm,
+  parseNewProductForm,
   parseOfferForm,
   parseOfferInternalsForm,
   parseOfferUpdateForm,
@@ -31,6 +33,7 @@ export {
   parseProductUpdateForm,
   type FormFields,
   type FormResult,
+  type NewProduct,
 } from "./admin-forms";
 export {
   CARD_LANGUAGES,

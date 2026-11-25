@@ -24,12 +24,26 @@ type CardOfferType = "raw-card" | "graded-card";
 
 export function OfferForm({ productId, productKind }: { productId: string; productKind: ProductKind }) {
   const { state, pending, onSubmit } = useAdminForm(createOffer.bind(null, productId));
+
+  return (
+    <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-3">
+      <OfferFields productKind={productKind} />
+      <div className="flex flex-wrap items-center gap-3 sm:col-span-3">
+        <SubmitButton pending={pending}>Angebot anlegen</SubmitButton>
+        <FormMessage state={state} />
+      </div>
+    </form>
+  );
+}
+
+/** All inputs of a new offer for a product of the given kind. Place inside a three-column grid. */
+export function OfferFields({ productKind }: { productKind: ProductKind }) {
   const [cardType, setCardType] = useState<CardOfferType>("raw-card");
   // Sealed products and accessories have exactly one offer type.
   const type = productKind === "single" ? cardType : productKind;
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-3">
+    <>
       <input type="hidden" name="type" value={type} />
       {productKind === "single" && (
         <Field label="Art">
@@ -76,11 +90,7 @@ export function OfferForm({ productId, productKind }: { productId: string; produ
       </Field>
       <TaxSchemeField />
       <InternalsFields />
-      <div className="flex flex-wrap items-center gap-3 sm:col-span-3">
-        <SubmitButton pending={pending}>Angebot anlegen</SubmitButton>
-        <FormMessage state={state} />
-      </div>
-    </form>
+    </>
   );
 }
 

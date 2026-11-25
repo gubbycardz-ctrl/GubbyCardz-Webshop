@@ -18,9 +18,13 @@ export interface CatalogRepository {
   saveProduct(product: Product): Promise<void>;
   getProductBySlug(slug: string): Promise<Product | null>;
   getProductById(id: string): Promise<Product | null>;
-  /** Filter by game or by kind (e.g. all accessories, with or without game), sorted by name. */
-  listProducts(query: { gameId?: string; kind?: ProductKind; limit?: number }): Promise<Product[]>;
-  /** Most recently created first; products without `createdAt` are left out. */
+  /**
+   * Filter by game or by kind (e.g. all accessories, with or without game), sorted by name.
+   * Hidden products are left out unless `includeHidden` is set (admin pages only) – so a
+   * caller that forgets about visibility errs on the safe side.
+   */
+  listProducts(query: { gameId?: string; kind?: ProductKind; limit?: number; includeHidden?: boolean }): Promise<Product[]>;
+  /** Most recently created first; products without `createdAt` and hidden products are left out. */
   listNewestProducts(limit: number): Promise<Product[]>;
 
   /**
@@ -28,6 +32,11 @@ export interface CatalogRepository {
    * another offer already uses the SKU. Internals are left unchanged when omitted.
    */
   saveOffer(offer: Offer, internals?: OfferInternals): Promise<void>;
+  /**
+   * Creates a product together with its first offer, all or nothing: fails for the
+   * same reasons as saveProduct and saveOffer, and then writes neither.
+   */
+  saveProductWithOffer(product: Product, offer: Offer, internals?: OfferInternals): Promise<void>;
   /** Sorted by price, cheapest first. */
   listOffers(productId: string): Promise<Offer[]>;
 
