@@ -27,12 +27,20 @@ export type SourceSet = {
   nameEn?: string;
   nameDe?: string;
   nameJa?: string;
-  era: string;
+  /** Absent where the TCG has no eras (the era dropdown then stays away). */
+  era?: string;
   setType?: CardSet["setType"];
   releaseDate: string;
+  preReleaseDate?: string;
 };
 
-export type SetSyncStatus = "create" | "update" | "enrich" | "unchanged" | "conflict";
+/** What a source adapter returns: the sets it understood, and the entries it left out on purpose, with the reason. */
+export type SourceResult = {
+  sets: SourceSet[];
+  skipped: { name: string; code?: string; reason: string }[];
+};
+
+export type SetSyncStatus = "create" | "update" | "enrich" | "unchanged" | "conflict" | "skipped";
 export type SetSyncItem = {
   status: SetSyncStatus;
   /** What to write if the item is applied. */
@@ -47,7 +55,7 @@ export type SetSyncPlan = {
   notInSource: CardSet[];
 };
 
-type CatalogField = "name" | "nameEn" | "nameDe" | "nameJa" | "era" | "setType" | "region" | "releaseDate" | "code";
+type CatalogField = "name" | "nameEn" | "nameDe" | "nameJa" | "era" | "setType" | "region" | "releaseDate" | "preReleaseDate" | "code";
 
 const FIELD_LABELS: Record<CatalogField, string> = {
   name: "Name",
@@ -58,13 +66,14 @@ const FIELD_LABELS: Record<CatalogField, string> = {
   setType: "Type",
   region: "Region",
   releaseDate: "Release date",
+  preReleaseDate: "Pre-release date",
   code: "Code",
 };
 
 // Fields a source maintains on sets it created.
-const MANAGED_FIELDS: readonly CatalogField[] = ["code", "name", "nameEn", "nameDe", "nameJa", "era", "setType", "region", "releaseDate"];
+const MANAGED_FIELDS: readonly CatalogField[] = ["code", "name", "nameEn", "nameDe", "nameJa", "era", "setType", "region", "releaseDate", "preReleaseDate"];
 // Fields it may fill in on sets entered by hand – the code and the name stay as the admin wrote them.
-const FILLABLE_FIELDS: readonly CatalogField[] = ["nameEn", "nameDe", "nameJa", "era", "setType", "region", "releaseDate"];
+const FILLABLE_FIELDS: readonly CatalogField[] = ["nameEn", "nameDe", "nameJa", "era", "setType", "region", "releaseDate", "preReleaseDate"];
 
 export function statusFor(releaseDate: string, today: string): "announced" | "released" {
   return releaseDate <= today ? "released" : "announced";
@@ -133,6 +142,7 @@ function toNewSet(source: SourceSet, today: string): CardSet {
     name: source.name,
     code: source.code,
     releaseDate: source.releaseDate,
+    preReleaseDate: source.preReleaseDate,
     nameEn: source.nameEn,
     nameDe: source.nameDe,
     nameJa: source.nameJa,
@@ -194,7 +204,12 @@ function isHandMadeLookalike(existing: CardSet, source: SourceSet): boolean {
   if (existing.gameId !== source.gameId || existing.source || existing.sourceId) return false;
   if ((existing.region ?? "international") !== "international") return false;
   const names = new Set([source.name, source.nameEn, source.nameDe].filter(Boolean).map((name) => toSlug(name as string)));
-  return toSlug(existing.code) === toSlug(source.code) || [existing.name, existing.nameEn, existing.nameDe].some((name) => name && names.has(toSlug(name)));
+  return compactCode(existing.code) === compactCode(source.code) || [existing.name, existing.nameEn, existing.nameDe].some((name) => name && names.has(toSlug(name)));
+}
+
+/** "OP-05", "OP05" and "op 05" are the same code. */
+function compactCode(code: string): string {
+  return code.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
 function describeChange(field: CatalogField, before: unknown, after: unknown): string {

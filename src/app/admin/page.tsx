@@ -3,7 +3,7 @@ import { requireAdmin } from "@/modules/auth/server";
 import { getCatalogRepository } from "@/modules/catalog/server";
 import { deleteCardSet, deleteGame } from "./catalog-actions";
 import { DeleteButton } from "./_components/delete-button";
-import { CardSetForm, GameForm } from "./_components/game-forms";
+import { CardSetForm, GameForm, GameRenameForm } from "./_components/game-forms";
 
 export default function AdminPage() {
   return (
@@ -37,6 +37,7 @@ async function GamesAndSets() {
                     label="Delete TCG"
                   />
                 </div>
+                <GameRenameForm game={game} />
                 {setsPerGame[index].length === 0 ? (
                   <p className="mt-2 text-sm text-foreground/60">No sets yet.</p>
                 ) : (

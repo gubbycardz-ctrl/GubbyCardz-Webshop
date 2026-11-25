@@ -62,6 +62,11 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
       return snapshot.docs.map((doc) => cardSetSchema.parse(doc.data())).sort(newestFirst);
     },
 
+    async getCardSet(id) {
+      const doc = await cardSets.doc(id).get();
+      return doc.exists ? cardSetSchema.parse(doc.data()) : null;
+    },
+
     async saveProduct(product) {
       const valid = productSchema.parse(product);
       await db.runTransaction(async (transaction) => {

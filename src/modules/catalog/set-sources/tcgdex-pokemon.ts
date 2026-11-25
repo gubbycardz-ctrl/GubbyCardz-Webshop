@@ -3,6 +3,7 @@ import { mapWithLimit } from "@/shared/concurrency";
 import type { CardSet } from "../game";
 import type { SourceSet } from "../set-sync";
 import { toSlug } from "../slug";
+import type { GetJson } from "./fetchers";
 
 // Pokémon sets from TCGdex (https://tcgdex.dev), an open, multilingual card database.
 // Scope decided by the shop owner: Sword & Shield, Scarlet & Violet and Mega Evolution, in English,
@@ -12,8 +13,7 @@ export const TCGDEX_API = "https://api.tcgdex.net/v2";
 export const TCGDEX_SOURCE = "tcgdex";
 export const POKEMON_GAME_ID = "pokemon";
 
-/** Reads JSON from a URL – injected, so the adapter never touches the network itself. */
-export type GetJson = (url: string) => Promise<unknown>;
+export type { GetJson };
 
 // TCGdex series ids per market. English and German share ids, Japan has its own.
 const ERAS = [

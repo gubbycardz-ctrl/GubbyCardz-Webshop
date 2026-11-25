@@ -15,7 +15,7 @@ export const gameSchema = z.object({
 export type Game = z.infer<typeof gameSchema>;
 
 export const SET_STATUSES = { announced: "Announced", released: "Released", archived: "Archived" } as const;
-export const SET_TYPES = { main: "Main set", special: "Special set", promo: "Promo" } as const;
+export const SET_TYPES = { main: "Main set", special: "Special set", starter: "Starter deck", promo: "Promo" } as const;
 // A set is tied to a market: English and German releases share one entry, Japanese sets are their own,
 // because they do not match the international ones one to one.
 export const SET_REGIONS = { international: "International (EN/DE)", japan: "Japan" } as const;
@@ -36,6 +36,8 @@ export const cardSetSchema = z.object({
   nameDe: optionalText,
   nameJa: optionalText,
   era: optionalText,
+  // Day cards can already be played and sold at pre-release events, before the official release.
+  preReleaseDate: z.iso.date().optional(),
   setType: z.enum(keysOf(SET_TYPES)).optional(),
   region: z.enum(keysOf(SET_REGIONS)).optional(),
   status: z.enum(keysOf(SET_STATUSES)).optional(),

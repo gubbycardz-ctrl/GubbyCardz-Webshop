@@ -53,7 +53,9 @@ export type { ImportRowResult, ImportRowStatus } from "./import-plan";
 export type { SetSyncStatus } from "./set-sync";
 export type { ImportOutcome } from "./catalog-import";
 export {
+  parseCardSetEditForm,
   parseCardSetForm,
+  parseGameEditForm,
   parseGameForm,
   parseNewProductForm,
   parseOfferForm,

@@ -4,7 +4,9 @@ import { refresh, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   CatalogError,
+  parseCardSetEditForm,
   parseCardSetForm,
+  parseGameEditForm,
   parseGameForm,
   parseNewProductForm,
   parseOfferForm,
@@ -27,6 +29,24 @@ export async function createGame(_: FormState, formData: FormData): Promise<Form
 export async function createCardSet(_: FormState, formData: FormData): Promise<FormState> {
   await requireAdmin();
   return save(parseCardSetForm(formFieldsOf(formData)), (set) => getCatalogRepository().saveCardSet(set), "Set saved.");
+}
+
+export async function updateGame(gameId: string, _: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+  if (!isId(gameId)) return { error: "TCG not found." };
+  const repository = getCatalogRepository();
+  const game = (await repository.listGames()).find((candidate) => candidate.id === gameId);
+  if (!game) return { error: "TCG not found." };
+  return save(parseGameEditForm(formFieldsOf(formData), game), (updated) => repository.saveGame(updated), "Saved.");
+}
+
+export async function updateCardSet(setId: string, _: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+  if (!isId(setId)) return { error: "Set not found." };
+  const repository = getCatalogRepository();
+  const set = await repository.getCardSet(setId);
+  if (!set) return { error: "Set not found." };
+  return save(parseCardSetEditForm(formFieldsOf(formData), set), (updated) => repository.saveCardSet(updated), "Saved.");
 }
 
 /** Creates the product and, if the form asks for it, its first offer – both or neither. */

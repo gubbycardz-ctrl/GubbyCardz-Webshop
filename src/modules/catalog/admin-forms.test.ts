@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   parseCardSetForm,
+  parseCardSetEditForm,
+  parseGameEditForm,
   parseGameForm,
   parseNewProductForm,
   parseOfferForm,
@@ -9,6 +11,7 @@ import {
   parseProductForm,
   parseProductUpdateForm,
 } from "./admin-forms";
+import type { CardSet } from "./game";
 import type { Offer } from "./offer";
 import type { Product } from "./product";
 
@@ -261,5 +264,53 @@ describe("parseProductForm – visibility", () => {
     const hidden: Product = { id: "p1", kind: "accessory", name: "Sleeves schwarz", slug: "sleeves-schwarz", hidden: true };
     const result = parseProductUpdateForm({ name: "Sleeves schwarz" }, hidden);
     expect(result.ok && result.value).not.toHaveProperty("hidden");
+  });
+});
+
+describe("parseGameEditForm", () => {
+  it("renames a TCG and keeps its id", () => {
+    expect(parseGameEditForm({ name: "  Pokémon " }, { id: "pokemon", name: "pokemon" })).toEqual({ ok: true, value: { id: "pokemon", name: "Pokémon" } });
+  });
+
+  it("does not accept an empty name", () => {
+    expect(parseGameEditForm({ name: "" }, { id: "pokemon", name: "pokemon" })).toEqual({ ok: false, error: "Name: required" });
+  });
+});
+
+describe("parseCardSetEditForm", () => {
+  const synced: CardSet = {
+    id: "pokemon-sv08-5",
+    gameId: "pokemon",
+    name: "Prismatic Evolutions",
+    code: "PRE",
+    releaseDate: "2025-01-17",
+    nameEn: "Prismatic Evolutions",
+    nameDe: "Prismatische Entwicklungen",
+    era: "Scarlet & Violet",
+    setType: "special",
+    region: "international",
+    status: "released",
+    source: "tcgdex",
+    sourceId: "tcgdex:en/sv08.5",
+    verifiedAt: "2026-11-25",
+  };
+  const fields = { name: "Prismatic Evolutions", code: "PRE", releaseDate: "2025-01-17", nameEn: "Prismatic Evolutions", nameDe: "Prismatische Evolution", era: "Scarlet & Violet", setType: "special", status: "released" };
+
+  it("takes the corrected values and takes the set over from the source, so the sync no longer overwrites it", () => {
+    const result = parseCardSetEditForm(fields, synced);
+    expect(result).toMatchObject({ ok: true, value: { id: "pokemon-sv08-5", nameDe: "Prismatische Evolution", sourceId: "tcgdex:en/sv08.5", region: "international" } });
+    expect(result.ok && result.value).not.toHaveProperty("source");
+  });
+
+  it("removes fields that were emptied", () => {
+    const result = parseCardSetEditForm({ ...fields, nameDe: "", setType: "", era: "" }, synced);
+    expect(result.ok && result.value).not.toHaveProperty("nameDe");
+    expect(result.ok && result.value).not.toHaveProperty("setType");
+    expect(result.ok && result.value).not.toHaveProperty("era");
+  });
+
+  it("rejects a missing name or code and an unknown type, in plain English", () => {
+    expect(parseCardSetEditForm({ ...fields, name: "", code: "" }, synced)).toEqual({ ok: false, error: "Name: required · Set code: required" });
+    expect(parseCardSetEditForm({ ...fields, setType: "huge" }, synced).ok).toBe(false);
   });
 });

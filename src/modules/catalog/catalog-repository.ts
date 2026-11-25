@@ -13,6 +13,7 @@ export interface CatalogRepository {
 
   saveCardSet(cardSet: CardSet): Promise<void>;
   listCardSets(gameId: string): Promise<CardSet[]>;
+  getCardSet(id: string): Promise<CardSet | null>;
 
   /** Fails if another product already uses the slug. */
   saveProduct(product: Product): Promise<void>;

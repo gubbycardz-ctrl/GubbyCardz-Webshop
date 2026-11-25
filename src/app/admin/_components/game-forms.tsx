@@ -1,7 +1,7 @@
 "use client";
 
 import type { Game } from "@/modules/catalog";
-import { createCardSet, createGame } from "../catalog-actions";
+import { createCardSet, createGame, updateGame } from "../catalog-actions";
 import { Field, FormMessage, SubmitButton, inputClass, useAdminForm } from "./form-kit";
 
 export function GameForm() {
@@ -43,6 +43,20 @@ export function CardSetForm({ games }: { games: Game[] }) {
         <SubmitButton pending={pending}>Add set</SubmitButton>
         <FormMessage state={state} />
       </div>
+    </form>
+  );
+}
+
+/** Renames a TCG in place – its address in the shop (/spiele/…) stays the same. */
+export function GameRenameForm({ game }: { game: Game }) {
+  const { state, pending, onSubmit } = useAdminForm(updateGame.bind(null, game.id), { resetOnSuccess: false });
+  return (
+    <form onSubmit={onSubmit} className="mt-2 flex flex-wrap items-end gap-2">
+      <Field label="Name">
+        <input name="name" required defaultValue={game.name} className={inputClass} />
+      </Field>
+      <SubmitButton pending={pending}>Rename</SubmitButton>
+      <FormMessage state={state} />
     </form>
   );
 }

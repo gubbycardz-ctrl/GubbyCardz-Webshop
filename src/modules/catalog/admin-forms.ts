@@ -22,6 +22,13 @@ export const FIELD_LABELS: Record<string, string> = {
   setId: "Set",
   code: "Set code",
   releaseDate: "Release date",
+  preReleaseDate: "Pre-release date",
+  nameEn: "English name",
+  nameDe: "German name",
+  nameJa: "Japanese name",
+  era: "Era",
+  setType: "Set type",
+  status: "Status",
   kind: "Product type",
   hidden: "Visibility",
   collectorNumber: "Number",
@@ -62,6 +69,34 @@ export function parseCardSetForm(fields: FormFields): FormResult<CardSet> {
     code,
     releaseDate: optionalText(fields.releaseDate),
   }, FIELD_LABELS, "en");
+}
+
+/** Renames a TCG. The id stays, because products and sets point at it and the shop address is built from it. */
+export function parseGameEditForm(fields: FormFields, game: Game): FormResult<Game> {
+  return validateForm(gameSchema, { ...game, name: text(fields.name) }, FIELD_LABELS, "en");
+}
+
+/**
+ * Corrects a set. Fields left empty are removed again. An edited set is the admin's from now on: it loses its
+ * `source`, so the catalog sync still completes it but never overwrites what was typed here.
+ */
+export function parseCardSetEditForm(fields: FormFields, set: CardSet): FormResult<CardSet> {
+  const edited = {
+    ...set,
+    name: text(fields.name),
+    code: text(fields.code),
+    releaseDate: optionalText(fields.releaseDate),
+    preReleaseDate: optionalText(fields.preReleaseDate),
+    nameEn: optionalText(fields.nameEn),
+    nameDe: optionalText(fields.nameDe),
+    nameJa: optionalText(fields.nameJa),
+    era: optionalText(fields.era),
+    setType: optionalText(fields.setType),
+    status: optionalText(fields.status),
+    source: undefined,
+  };
+  const present = Object.fromEntries(Object.entries(edited).filter(([, value]) => value !== undefined));
+  return validateForm(cardSetSchema, present, FIELD_LABELS, "en");
 }
 
 /** `createdAt` is passed in rather than read from the clock, so edits can keep the original value. */

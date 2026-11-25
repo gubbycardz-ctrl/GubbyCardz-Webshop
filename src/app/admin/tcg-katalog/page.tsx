@@ -10,11 +10,19 @@ import {
   matchesSetSearch,
   type CardSet,
 } from "@/modules/catalog";
-import { getCatalogRepository } from "@/modules/catalog/server";
+import { SET_SYNC_SOURCES, getCatalogRepository } from "@/modules/catalog/server";
+import Link from "next/link";
 import { inputClass } from "../_components/form-kit";
 import { SyncPanel } from "./sync-panel";
 
 export const metadata: Metadata = { title: "TCG Catalog" };
+
+const SOURCE_DESCRIPTIONS: Record<string, string> = {
+  pokemon: "Source: TCGdex. Scope: Sword & Shield, Scarlet & Violet and Mega Evolution, in English, German and Japanese.",
+  "one-piece":
+    "Source: the official One Piece Card Game website (English). Booster packs, extra and premium boosters and starter decks, including announced sets with their pre-release date.",
+  lorcana: "Source: Lorcast, a community database (English). The numbered main sets, including announced ones.",
+};
 
 export default function TcgCatalogPage({ searchParams }: PageProps<"/admin/tcg-katalog">) {
   return (
@@ -56,7 +64,11 @@ async function TcgCatalog({ searchParams }: Pick<PageProps<"/admin/tcg-katalog">
         </p>
       </section>
 
-      <SyncPanel />
+      <div className="flex flex-col gap-4">
+        {SET_SYNC_SOURCES.map(({ id, label }) => (
+          <SyncPanel key={id} source={id} label={label} description={SOURCE_DESCRIPTIONS[id]} />
+        ))}
+      </div>
 
       <section>
         <h2 className="text-xl font-semibold">Sets</h2>
@@ -140,7 +152,9 @@ function SetTable({ sets, productCounts, duplicates }: { sets: CardSet[]; produc
           {sets.map((set) => (
             <tr key={set.id} className="align-top">
               <td className="px-3 py-2">
-                <span className="font-medium">{set.nameEn ?? set.name}</span>
+                <Link href={`/admin/tcg-katalog/${set.id}`} className="font-medium text-brand-blue hover:underline">
+                  {set.nameEn ?? set.name}
+                </Link>
                 {[set.nameDe, set.nameJa]
                   .filter((name) => name && name !== (set.nameEn ?? set.name))
                   .map((name) => (
@@ -154,7 +168,10 @@ function SetTable({ sets, productCounts, duplicates }: { sets: CardSet[]; produc
               <td className="px-3 py-2">{set.era ?? "–"}</td>
               <td className="px-3 py-2">{set.setType ? SET_TYPES[set.setType] : "–"}</td>
               <td className="px-3 py-2">{set.region === "japan" ? "Japan" : "EN/DE"}</td>
-              <td className="px-3 py-2 whitespace-nowrap">{set.releaseDate ? formatDate(set.releaseDate) : "–"}</td>
+              <td className="px-3 py-2 whitespace-nowrap">
+                {set.releaseDate ? formatDate(set.releaseDate) : "–"}
+                {set.preReleaseDate && <span className="block text-xs text-foreground/60">Pre-release {formatDate(set.preReleaseDate)}</span>}
+              </td>
               <td className="px-3 py-2">{set.status ? SET_STATUSES[set.status] : "–"}</td>
               <td className="px-3 py-2 text-right">{productCounts.get(set.id) ?? 0}</td>
             </tr>

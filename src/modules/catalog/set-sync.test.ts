@@ -147,3 +147,29 @@ describe("planSetSync – contradictory source data", () => {
     expect(notInSource).toEqual([]);
   });
 });
+
+describe("planSetSync – pre-release dates, era-less sets and code spelling", () => {
+  it("stores the pre-release date of an announced set and follows it when the source moves it", () => {
+    const announced: SourceSet = { ...upcoming, preReleaseDate: "2027-02-26" };
+    const stored = plan([announced]).items[0].set;
+    expect(stored).toMatchObject({ status: "announced", preReleaseDate: "2027-02-26" });
+
+    const moved = plan([{ ...announced, preReleaseDate: "2027-03-01" }], [stored]).items[0];
+    expect(moved).toMatchObject({ status: "update", set: { preReleaseDate: "2027-03-01" } });
+    expect(moved.changes).toEqual(["Pre-release date: 2027-02-26 → 2027-03-01"]);
+  });
+
+  it("handles TCGs without eras", () => {
+    const noEra: SourceSet = { ...scarletViolet, era: undefined };
+    const { items } = plan([noEra]);
+    expect(items[0].set).not.toHaveProperty("era");
+  });
+
+  it("finds a hand-made set whose code is spelled with a hyphen", () => {
+    const source: SourceSet = { ...scarletViolet, id: "one-piece-op05", sourceId: "onepiece:OP05", code: "OP05", name: "Awakening of the New Era", nameEn: "Awakening of the New Era", nameDe: undefined, gameId: "one-piece" };
+    const manual: CardSet = { id: "op05", gameId: "one-piece", name: "Awakening of the New Era", code: "OP-05" };
+    const { items } = plan([source], [manual]);
+    expect(items[0]).toMatchObject({ status: "enrich", set: { id: "op05", code: "OP-05" } });
+    expect(items[0].notes).toEqual(["Code differs (existing: OP-05, source: OP05) – not overwritten"]);
+  });
+});

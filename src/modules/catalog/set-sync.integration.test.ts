@@ -33,6 +33,21 @@ const getJson: GetJson = async (url) => {
 };
 const SET_COUNT = 5;
 
+const op = (cat: string, title: string, date: string, href = "") =>
+  `<li data-cat="${cat}"><a href="${href}"><h4 class="linkListColTitle">${title}</h4><time datetime="${date}">x</time></a></li>`;
+const onePiecePages: Record<string, string> = {
+  "boosters&page=1": `<ul>${op("boosters", "BOOSTER PACK -COME IN, WORLD- [OP-19]", "2027-03-05", "https://en.onepiece-cardgame.com/products/op19.html")}${op("boosters", "BOOSTER PACK -Awakening of the New Era- [OP-05]", "2023-12-08")}${op("boosters", "Treasure Boosters Set", "2024-08-30")}</ul>`,
+  "boosters&page=2": "<ul></ul>",
+  "decks&page=1": `<ul>${op("decks", "STARTER DECK -Egghead- [ST-29]", "2026-01-16")}</ul>`,
+  "decks&page=2": "<ul></ul>",
+};
+const getText = async (url: string) => {
+  if (url.endsWith("/products/op19.html")) return "<dl><dt>Pre-Release Date</dt><dd>February 26, 2027</dd></dl>";
+  const page = url.match(/subcategory=(\w+&page=\d+)/)?.[1];
+  if (!page || !(page in onePiecePages)) throw new Error(`unexpected request ${url}`);
+  return onePiecePages[page];
+};
+
 let app: App;
 let repository: CatalogRepository;
 
@@ -128,6 +143,37 @@ describe("set sync", () => {
     expect(applied).toMatchObject({ ok: true, written: { sets: SET_COUNT, failures: [] } });
     expect(applied.ok && applied.rows.filter((row) => row.status === "conflict").map((row) => row.code).sort()).toEqual(["CS1a", "CS1b"]);
     expect((await repository.listCardSets("pokemon")).map((set) => set.code)).not.toContain("CS1a");
+  }, 30_000);
+
+  it("syncs One Piece next to an existing TCG and hand-made set, keeping both and creating no twins", async () => {
+    await repository.saveGame({ id: "one-piece", name: "One Piece" });
+    await repository.saveCardSet({ id: "op05", gameId: "one-piece", name: "Awakening of the New Era", code: "OP-05", releaseDate: "2023-12-08" });
+
+    const applied = await runSetSync("one-piece", { repository, getJson, getText, today: TODAY });
+    expect(applied).toMatchObject({ ok: true, newGame: false, written: { failures: [] } });
+
+    const sets = await repository.listCardSets("one-piece");
+    expect(sets.map((set) => set.code).sort()).toEqual(["OP-05", "OP19", "ST29"]);
+    expect(await repository.listGames()).toEqual([{ id: "one-piece", name: "One Piece" }]);
+    expect(sets.find((set) => set.code === "OP19")).toMatchObject({ status: "announced", releaseDate: "2027-03-05", preReleaseDate: "2027-02-26", era: "Booster Packs" });
+    expect(sets.find((set) => set.code === "ST29")).toMatchObject({ setType: "starter", era: "Starter Decks", status: "released" });
+    // The hand-made set was completed, not replaced and not adopted by the source.
+    const mine = sets.find((set) => set.id === "op05");
+    expect(mine).toMatchObject({ name: "Awakening of the New Era", code: "OP-05", era: "Booster Packs", setType: "main" });
+    expect(mine).not.toHaveProperty("source");
+    expect(applied.ok && applied.rows.filter((row) => row.status === "skipped").map((row) => row.name)).toEqual(["Treasure Boosters Set"]);
+
+    const again = await runSetSync("one-piece", { repository, getJson, getText, today: TODAY });
+    expect(again).toMatchObject({ ok: true, written: { sets: 0 } });
+  }, 30_000);
+
+  it("recognizes a TCG that exists under another spelling instead of creating a twin", async () => {
+    await repository.saveGame({ id: "disney-lorcana", name: "Disney Lorcana" });
+    const lorcast = { results: [{ name: "The First Chapter", code: "1", released_at: "2023-08-18", prereleased_at: "2023-08-18" }] };
+    const result = await runSetSync("lorcana", { repository, getJson: async () => lorcast, today: TODAY });
+    expect(result).toMatchObject({ ok: true, newGame: false, written: { sets: 1 } });
+    expect(await repository.listGames()).toEqual([{ id: "disney-lorcana", name: "Disney Lorcana" }]);
+    expect((await repository.listCardSets("disney-lorcana")).map((set) => set.name)).toEqual(["The First Chapter"]);
   }, 30_000);
 
   it("writes nothing and says so when the source is not reachable", async () => {
