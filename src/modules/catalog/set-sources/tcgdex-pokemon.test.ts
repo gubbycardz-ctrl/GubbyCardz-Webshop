@@ -84,6 +84,6 @@ describe("fetchPokemonSets", () => {
 
   it("fails clearly on unexpected data instead of importing half of it", async () => {
     const broken: GetJson = async (url) => (url.includes("/sets/sv01") ? { id: "sv01", name: "x", releaseDate: "bald" } : source().getJson(url));
-    await expect(fetchPokemonSets(broken)).rejects.toThrow("Unerwartete Daten bei Set en/sv01");
+    await expect(fetchPokemonSets(broken)).rejects.toThrow("Unexpected data for set en/sv01");
   });
 });

@@ -109,15 +109,15 @@ function optionalType(setType: CardSet["setType"]) {
 }
 
 async function readSeries(getJson: GetJson, language: string, seriesId: string) {
-  return parse(seriesSchema, await getJson(`${TCGDEX_API}/${language}/series/${encodeURIComponent(seriesId)}`), `Serie ${language}/${seriesId}`);
+  return parse(seriesSchema, await getJson(`${TCGDEX_API}/${language}/series/${encodeURIComponent(seriesId)}`), `series ${language}/${seriesId}`);
 }
 
 async function readSet(getJson: GetJson, language: string, setId: string) {
-  return parse(setSchema, await getJson(`${TCGDEX_API}/${language}/sets/${encodeURIComponent(setId)}`), `Set ${language}/${setId}`);
+  return parse(setSchema, await getJson(`${TCGDEX_API}/${language}/sets/${encodeURIComponent(setId)}`), `set ${language}/${setId}`);
 }
 
 function parse<T>(schema: z.ZodType<T>, data: unknown, what: string): T {
   const result = schema.safeParse(data);
-  if (!result.success) throw new Error(`Unerwartete Daten bei ${what}`);
+  if (!result.success) throw new Error(`Unexpected data for ${what}`);
   return result.data;
 }

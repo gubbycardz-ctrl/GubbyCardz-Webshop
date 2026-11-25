@@ -27,10 +27,10 @@ export async function readFirstSheet(file: Blob): Promise<SpreadsheetRow[]> {
     return rows.map((row) => row.map(toCell));
   } catch (error) {
     if (error instanceof InvalidInputError && error.code === "XLS_FILE_NOT_SUPPORTED") {
-      throw new SpreadsheetError("Alte .xls-Dateien gehen nicht – bitte in Excel als .xlsx speichern.");
+      throw new SpreadsheetError("Old .xls files are not supported – please save the file as .xlsx in Excel.");
     }
     if (error instanceof InvalidInputError || error instanceof InvalidSpreadsheetError) {
-      throw new SpreadsheetError("Die Datei ist keine lesbare Excel-Datei (.xlsx).");
+      throw new SpreadsheetError("The file is not a readable Excel file (.xlsx).");
     }
     throw error;
   }

@@ -50,7 +50,7 @@ describe("planImport – new SKUs", () => {
     const result = plan([bundleRow]);
     expect(result.hasErrors).toBe(false);
     expect(result.rows).toEqual([
-      { line: 2, sku: bundleRow.sku, name: bundleRow.name, status: "create", messages: ["Neues Produkt", `VK ${formatEuro(8000)}`, "Bestand 1"] },
+      { line: 2, sku: bundleRow.sku, name: bundleRow.name, status: "create", messages: ["New product", `Price ${formatEuro(8000)}`, "Stock 1"] },
     ]);
     expect(result.products).toEqual([
       { id: "id-1", kind: "sealed", category: "booster-bundle", name: bundleRow.name, slug: "silberne-sturmwinde-boosterbundle", gameId: "pokemon", setId: "pokemon-sit", createdAt: NOW },
@@ -68,14 +68,14 @@ describe("planImport – new SKUs", () => {
     const result = plan([bundleRow, english]);
     expect(result.products).toHaveLength(1);
     expect(result.offers.map(({ offer }) => offer.productId)).toEqual(["id-1", "id-1"]);
-    expect(result.rows[1].messages[0]).toBe("Neues Produkt wie in Zeile 2");
+    expect(result.rows[1].messages[0]).toBe("New product, as in row 2");
   });
 
   it("adds offers to an existing product with the same name", () => {
     const result = plan([bundleRow], context({ productsBySlug: new Map([[existingBundle.product.slug, existingBundle.product]]) }));
     expect(result.products).toEqual([]);
     expect(result.offers[0].offer.productId).toBe("p1");
-    expect(result.rows[0].messages[0]).toBe(`Zu vorhandenem Produkt „${bundleRow.name}“`);
+    expect(result.rows[0].messages[0]).toBe(`Added to existing product "${bundleRow.name}"`);
   });
 
   it("requires stock and purchase data and known game and set, and writes nothing then", () => {
@@ -87,11 +87,11 @@ describe("planImport – new SKUs", () => {
     expect(result.rows[0]).toMatchObject({
       status: "error",
       messages: [
-        "Bestand: bitte ausfüllen (neuer Artikel)",
-        "EK: bitte ausfüllen (neuer Artikel)",
-        "Herkunft: bitte ausfüllen (neuer Artikel)",
-        "Steuerart: bitte ausfüllen (neuer Artikel)",
-        "Set: „Destined Rivals“ gibt es bei Pokémon noch nicht – bitte unter „Spiele & Sets“ anlegen",
+        "Bestand: required (new item)",
+        "EK: required (new item)",
+        "Herkunft: required (new item)",
+        "Steuerart: required (new item)",
+        "Set: \"Destined Rivals\" does not exist for Pokémon yet – add it under \"TCGs & Sets\" or load it in \"TCG Catalog\"",
       ],
     });
     expect(result.rows[1].status).toBe("create");
@@ -101,8 +101,8 @@ describe("planImport – new SKUs", () => {
     const accessory: Product = { id: "p9", kind: "accessory", name: "Silberne Sturmwinde Boosterbundle", slug: existingBundle.product.slug };
     const result = plan([bundleRow, { ...bundleRow, line: 5 }], context({ productsBySlug: new Map([[accessory.slug, accessory]]) }));
     expect(result.rows.map((row) => row.messages)).toEqual([
-      ["Name: „Silberne Sturmwinde Boosterbundle“ gehört schon zu einem anderen Produkt (andere Produktart oder anderes Spiel)"],
-      ["SKU: steht schon in Zeile 2"],
+      ["Name: \"Silberne Sturmwinde Boosterbundle\" already belongs to another product (different product type or TCG)"],
+      ["SKU: already used in row 2"],
     ]);
   });
 });
@@ -115,10 +115,10 @@ describe("planImport – known SKUs", () => {
     expect(result.rows[0]).toMatchObject({
       status: "update",
       messages: [
-        `VK ${formatEuro(7500)} → ${formatEuro(8000)}`,
-        "Lagerplatz „SEALED-01“ → „SEALED-02“",
-        "Bestand bleibt 2 (Datei: 1 – nur mit Häkchen „Bestand übernehmen“)",
-        `EK bleibt ${formatEuro(2500)} (wird nie überschrieben)`,
+        `Price ${formatEuro(7500)} → ${formatEuro(8000)}`,
+        "Storage location \"SEALED-01\" → \"SEALED-02\"",
+        "Stock stays 2 (file: 1 – only with \"Take stock from the file\" ticked)",
+        `Purchase price stays ${formatEuro(2500)} (never overwritten)`,
       ],
     });
     expect(result.offers).toEqual([
@@ -130,7 +130,7 @@ describe("planImport – known SKUs", () => {
   it("overwrites stock only on request", () => {
     const result = plan([bundleRow], known(), true);
     expect(result.offers[0].offer.stock).toBe(1);
-    expect(result.rows[0].messages).toContain("Bestand 2 → 1");
+    expect(result.rows[0].messages).toContain("Stock 2 → 1");
   });
 
   it("fills in missing purchase data of older offers", () => {
@@ -140,7 +140,7 @@ describe("planImport – known SKUs", () => {
       internals: { sku: bundleRow.sku, storageLocation: "SEALED-01" },
     };
     const result = plan([{ ...bundleRow, stock: 2 }], known(legacy));
-    expect(result.rows[0].messages).toEqual(["Steuerart ergänzt: Regelbesteuert (19 %)", `EK ergänzt: ${formatEuro(2700)}`, "Herkunft ergänzt: Gewerblich"]);
+    expect(result.rows[0].messages).toEqual(["Tax scheme added: Regular VAT (19 %)", `Purchase price added: ${formatEuro(2700)}`, "Origin added: Commercial"]);
     expect(result.offers[0]).toEqual({
       offer: { ...legacy.offer, taxScheme: "standard" },
       internals: { sku: bundleRow.sku, purchasePriceCents: 2700, origin: "commercial", storageLocation: "SEALED-01" },
@@ -149,7 +149,7 @@ describe("planImport – known SKUs", () => {
 
   it("renames the product, and reports unchanged rows without writing", () => {
     const renamed = plan([{ ...bundleRow, name: "Silver Tempest Booster Bundle", priceCents: 7500, stock: 2, purchasePriceCents: 2500 }], known());
-    expect(renamed.rows[0].messages).toEqual(["Name „Silberne Sturmwinde Boosterbundle“ → „Silver Tempest Booster Bundle“"]);
+    expect(renamed.rows[0].messages).toEqual(["Name \"Silberne Sturmwinde Boosterbundle\" → \"Silver Tempest Booster Bundle\""]);
     expect(renamed.products).toEqual([{ ...existingBundle.product, name: "Silver Tempest Booster Bundle", slug: "silver-tempest-booster-bundle" }]);
     expect(renamed.offers).toEqual([]);
 

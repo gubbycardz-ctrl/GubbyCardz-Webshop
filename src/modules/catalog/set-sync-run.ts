@@ -45,9 +45,9 @@ const REQUEST_TIMEOUT_MS = 15_000;
 
 /** Only the source's own API may be called, whatever a plan or a redirect might say. */
 async function httpGetJson(url: string): Promise<unknown> {
-  if (!url.startsWith(`${TCGDEX_API}/`)) throw new Error("Unerlaubte Adresse");
+  if (!url.startsWith(`${TCGDEX_API}/`)) throw new Error("Address not allowed");
   const response = await fetch(url, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS), headers: { accept: "application/json" }, cache: "no-store" });
-  if (!response.ok) throw new Error(`HTTP ${response.status} bei ${url}`);
+  if (!response.ok) throw new Error(`HTTP ${response.status} for ${url}`);
   return response.json();
 }
 
@@ -89,8 +89,8 @@ async function prepare(sourceId: SetSyncSourceId, deps: Deps) {
   try {
     incoming = await source.fetchSets(deps.getJson ?? httpGetJson);
   } catch (error) {
-    const reason = error instanceof Error ? error.message : "unbekannter Fehler";
-    return { ok: false as const, error: `Die Quelle ist nicht erreichbar oder lieferte unerwartete Daten (${reason}). Es wurde nichts geändert.` };
+    const reason = error instanceof Error ? error.message : "unknown error";
+    return { ok: false as const, error: `The source is not reachable or returned unexpected data (${reason}). Nothing was changed.` };
   }
 
   const games = await repository.listGames();

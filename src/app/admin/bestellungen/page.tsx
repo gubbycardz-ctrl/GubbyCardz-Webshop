@@ -7,16 +7,16 @@ import { getOrderRepository } from "@/modules/orders/server";
 import { formatEuro } from "@/shared/money";
 import { formatDateTime } from "./format";
 
-export const metadata: Metadata = { title: "Bestellungen" };
+export const metadata: Metadata = { title: "Orders" };
 
 // Packing is the daily job, so paid orders come first.
 const DEFAULT_FILTER: OrderStatus = "paid";
-const ALL = "alle";
-const FILTERS = [...ORDER_STATUSES.map((status) => ({ value: status, label: ORDER_STATUS_LABELS[status] })), { value: ALL, label: "Alle" }];
+const ALL = "all";
+const FILTERS = [...ORDER_STATUSES.map((status) => ({ value: status, label: ORDER_STATUS_LABELS[status] })), { value: ALL, label: "All" }];
 
 export default function AdminOrdersPage({ searchParams }: PageProps<"/admin/bestellungen">) {
   return (
-    <Suspense fallback={<p className="text-foreground/60">Wird geladen …</p>}>
+    <Suspense fallback={<p className="text-foreground/60">Loading …</p>}>
       <OrderList searchParams={searchParams} />
     </Suspense>
   );
@@ -31,7 +31,7 @@ async function OrderList({ searchParams }: Pick<PageProps<"/admin/bestellungen">
 
   return (
     <div>
-      <h1 className="text-3xl font-bold">Bestellungen</h1>
+      <h1 className="text-3xl font-bold">Orders</h1>
       <nav className="mt-4 flex flex-wrap gap-2 text-sm">
         {FILTERS.map(({ value, label }) => (
           <Link
@@ -46,17 +46,17 @@ async function OrderList({ searchParams }: Pick<PageProps<"/admin/bestellungen">
       </nav>
 
       {orders.length === 0 ? (
-        <p className="mt-6 text-foreground/60">Keine Bestellungen.</p>
+        <p className="mt-6 text-foreground/60">No orders.</p>
       ) : (
         <div className="mt-6 overflow-x-auto rounded-xl border border-foreground/10">
           <table className="w-full text-left text-sm">
             <thead className="bg-foreground/5 text-foreground/70">
               <tr>
-                <th className="px-4 py-2 font-medium">Nr.</th>
-                <th className="px-4 py-2 font-medium">Datum</th>
-                <th className="px-4 py-2 font-medium">Kunde</th>
-                <th className="px-4 py-2 text-right font-medium">Artikel</th>
-                <th className="px-4 py-2 text-right font-medium">Summe</th>
+                <th className="px-4 py-2 font-medium">No.</th>
+                <th className="px-4 py-2 font-medium">Date</th>
+                <th className="px-4 py-2 font-medium">Customer</th>
+                <th className="px-4 py-2 text-right font-medium">Items</th>
+                <th className="px-4 py-2 text-right font-medium">Total</th>
                 <th className="px-4 py-2 font-medium">Status</th>
               </tr>
             </thead>
@@ -82,7 +82,7 @@ async function OrderList({ searchParams }: Pick<PageProps<"/admin/bestellungen">
         </div>
       )}
       {orders.length === ORDER_LIST_LIMIT && (
-        <p className="mt-3 text-sm text-foreground/60">Es werden die neuesten {ORDER_LIST_LIMIT} Bestellungen angezeigt.</p>
+        <p className="mt-3 text-sm text-foreground/60">Showing the latest {ORDER_LIST_LIMIT} orders.</p>
       )}
     </div>
   );

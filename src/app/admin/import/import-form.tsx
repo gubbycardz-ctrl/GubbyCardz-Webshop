@@ -6,10 +6,10 @@ import { inputClass } from "../_components/form-kit";
 import { importProducts } from "../import-actions";
 
 const STATUS_LABELS: Record<ImportRowStatus, string> = {
-  create: "Neu",
-  update: "Ändern",
-  unchanged: "Unverändert",
-  error: "Fehler",
+  create: "New",
+  update: "Update",
+  unchanged: "Unchanged",
+  error: "Error",
 };
 
 const STATUS_CLASSES: Record<ImportRowStatus, string> = {
@@ -29,7 +29,7 @@ export function ImportForm() {
     const file = formData.get("file");
     // Larger requests never reach the Server Action, so say it here.
     if (file instanceof File && file.size > MAX_IMPORT_FILE_BYTES) {
-      setOutcome({ ok: false, error: `Die Datei ist zu groß (höchstens ${MAX_IMPORT_FILE_BYTES / 1024} KB).` });
+      setOutcome({ ok: false, error: `The file is too large (at most ${MAX_IMPORT_FILE_BYTES / 1024} KB).` });
       return;
     }
     startTransition(async () => setOutcome(await importProducts(formData)));
@@ -42,7 +42,7 @@ export function ImportForm() {
     // A new file or option makes the preview stale: only what was checked may be imported.
     <form onSubmit={onSubmit} onChange={() => setOutcome(null)} className="flex flex-col gap-4">
       <label className="flex flex-col gap-1 text-sm">
-        <span className="text-foreground/70">Excel-Datei (.xlsx)</span>
+        <span className="text-foreground/70">Excel file (.xlsx)</span>
         <input
           type="file"
           name="file"
@@ -54,19 +54,18 @@ export function ImportForm() {
       <label className="flex items-start gap-2 text-sm">
         <input type="checkbox" name="hideNewProducts" defaultChecked className="mt-1" />
         <span>
-          Neue Produkte zuerst unsichtbar anlegen
+          Create new products as hidden first
           <span className="block text-foreground/60">
-            Sie erscheinen nicht im Shop und sind nicht kaufbar, bis du sie im Produktbereich sichtbar schaltest. Bereits vorhandene
-            Produkte bleiben, wie sie sind.
+            They do not appear in the shop and cannot be bought until you make them visible under Products. Products that already exist stay as they are.
           </span>
         </span>
       </label>
       <label className="flex items-start gap-2 text-sm">
         <input type="checkbox" name="overwriteStock" className="mt-1" />
         <span>
-          Bestand aus der Datei übernehmen
+          Take stock from the file
           <span className="block text-foreground/60">
-            Nur direkt nach einer Inventur – sonst kommen inzwischen verkaufte Artikel zurück in den Shop.
+            Only right after a stocktake – otherwise items sold in the meantime come back into the shop.
           </span>
         </span>
       </label>
@@ -78,7 +77,7 @@ export function ImportForm() {
           disabled={pending}
           className="rounded-lg border border-foreground/20 px-4 py-2 text-sm font-medium hover:bg-foreground/5 disabled:opacity-50"
         >
-          {pending ? "Wird geprüft …" : "Prüfen"}
+          {pending ? "Checking …" : "Check"}
         </button>
         {canImport && (
           <button
@@ -88,7 +87,7 @@ export function ImportForm() {
             disabled={pending}
             className="rounded-lg bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
           >
-            {changes} Artikel importieren
+            Import {changes} items
           </button>
         )}
       </div>
@@ -109,7 +108,7 @@ function ImportResult({ outcome }: { outcome: ImportOutcome }) {
     <div className="flex flex-col gap-3">
       <Summary outcome={outcome} />
       {outcome.ignoredColumns.length > 0 && (
-        <p className="text-sm text-foreground/60">Nicht verwendete Spalten: {outcome.ignoredColumns.join(", ")}</p>
+        <p className="text-sm text-foreground/60">Unused columns: {outcome.ignoredColumns.join(", ")}</p>
       )}
       <RowTable rows={outcome.rows} />
     </div>
@@ -125,7 +124,7 @@ function Summary({ outcome }: { outcome: Extract<ImportOutcome, { ok: true }> })
     return (
       <div role="status" className="text-sm">
         <p className="font-medium text-green-700 dark:text-green-400">
-          Importiert: {offers} Artikel und {products} Produkte gespeichert.
+          Imported: {offers} items and {products} products saved.
         </p>
         {failures.length > 0 && (
           <ul className="mt-2 list-disc pl-5 text-brand-red">
@@ -139,9 +138,9 @@ function Summary({ outcome }: { outcome: Extract<ImportOutcome, { ok: true }> })
   }
   return (
     <p role="status" className="text-sm">
-      <span className="font-medium">Vorschau – noch nichts gespeichert.</span> {counts}
+      <span className="font-medium">Preview – nothing saved yet.</span> {counts}
       {outcome.hasErrors && (
-        <span className="block text-brand-red">Bitte die Fehler in der Datei korrigieren und erneut prüfen – vorher wird nichts importiert.</span>
+        <span className="block text-brand-red">Please fix the errors in the file and check again – nothing is imported before that.</span>
       )}
     </p>
   );
@@ -153,7 +152,7 @@ function RowTable({ rows }: { rows: ImportRowResult[] }) {
       <table className="w-full text-left text-sm">
         <thead className="bg-foreground/5 text-foreground/70">
           <tr>
-            <th className="px-3 py-2 font-medium">Zeile</th>
+            <th className="px-3 py-2 font-medium">Row</th>
             <th className="px-3 py-2 font-medium">SKU / Name</th>
             <th className="px-3 py-2 font-medium">Status</th>
             <th className="px-3 py-2 font-medium">Details</th>

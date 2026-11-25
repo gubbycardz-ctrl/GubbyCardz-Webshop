@@ -1,11 +1,11 @@
-import { TAX_SCHEMES } from "@/modules/pricing";
 import { validateForm } from "@/shared/form-validation";
 import { formatEuro } from "@/shared/money";
+import { ADMIN_PURCHASE_ORIGINS, ADMIN_TAX_SCHEMES } from "./admin-labels";
 import { FIELD_LABELS } from "./admin-forms";
 import type { CardSet, Game } from "./game";
 import type { ImportRow, ImportRowError } from "./import-rows";
 import { offerSchema, type Offer } from "./offer";
-import { PURCHASE_ORIGINS, offerInternalsSchema, type OfferInternals } from "./offer-internals";
+import { offerInternalsSchema, type OfferInternals } from "./offer-internals";
 import { productSchema, productSlug, type Product } from "./product";
 import { toSlug } from "./slug";
 
@@ -72,7 +72,7 @@ export function planImport(
   for (const row of parsed.rows) {
     const firstLine = lineOfSku.get(row.sku);
     if (firstLine !== undefined) {
-      results.push(failed(row, [`SKU: steht schon in Zeile ${firstLine}`]));
+      results.push(failed(row, [`SKU: already used in row ${firstLine}`]));
       continue;
     }
     lineOfSku.set(row.sku, row.line);
@@ -101,22 +101,24 @@ export function planImport(
       offerSchema,
       { id: options.newId(), productId: product.id, ...row.variant, priceCents: row.priceCents, stock: row.stock, taxScheme: row.taxScheme },
       FIELD_LABELS,
+      "en",
     );
     const internals = validateForm(
       offerInternalsSchema,
       { sku: row.sku, purchasePriceCents: row.purchasePriceCents, origin: row.origin, storageLocation: row.storageLocation },
       FIELD_LABELS,
+      "en",
     );
     if (!offer.ok || !internals.ok) return failed(row, [offer, internals].flatMap((result) => (result.ok ? [] : [result.error])));
 
     offersToSave.push({ offer: offer.value, internals: internals.value });
-    return { ...describe(row), status: "create", messages: [productNote(row, product), `VK ${formatEuro(row.priceCents)}`, `Bestand ${row.stock}`] };
+    return { ...describe(row), status: "create", messages: [productNote(row, product), `Price ${formatEuro(row.priceCents)}`, `Stock ${row.stock}`] };
   }
 
   function planUpdate(row: ImportRow, existing: ExistingOffer): ImportRowResult {
     const plannedName = productsToSave.get(existing.product.id)?.name;
     if (plannedName !== undefined && plannedName !== row.name) {
-      return failed(row, [`Name: derselbe Artikel heißt in einer anderen Zeile „${plannedName}“`]);
+      return failed(row, [`Name: the same item is named "${plannedName}" in another row`]);
     }
 
     const changes: string[] = [];
@@ -125,7 +127,7 @@ export function planImport(
       if (!renamed.ok) return failed(row, [renamed.error]);
       productsToSave.set(renamed.value.id, renamed.value);
       plannedBySlug.set(renamed.value.slug, renamed.value);
-      changes.push(`Name „${existing.product.name}“ → „${row.name}“`);
+      changes.push(`Name "${existing.product.name}" → "${row.name}"`);
     }
 
     const { offer, internals } = existing;
@@ -145,7 +147,7 @@ export function planImport(
     const offerChanges = describeChanges(existing, updatedOffer, updatedInternals);
     const notes = keptValueNotes(row, existing, options.overwriteStock);
     if (offerChanges.length > 0) {
-      const valid = validateForm(offerSchema, updatedOffer, FIELD_LABELS);
+      const valid = validateForm(offerSchema, updatedOffer, FIELD_LABELS, "en");
       if (!valid.ok) return failed(row, [valid.error]);
       offersToSave.push({ offer: valid.value, internals: updatedInternals });
     }
@@ -155,10 +157,10 @@ export function planImport(
   }
 
   function renameProduct(product: Product, name: string) {
-    const renamed = validateForm(productSchema, { ...product, name, slug: productSlug({ ...product, name }) }, FIELD_LABELS);
+    const renamed = validateForm(productSchema, { ...product, name, slug: productSlug({ ...product, name }) }, FIELD_LABELS, "en");
     if (!renamed.ok) return renamed;
     const owner = ownerOfSlug(renamed.value.slug);
-    if (owner && owner.id !== product.id) return { ok: false as const, error: `Name: „${name}“ hat schon ein anderes Produkt` };
+    if (owner && owner.id !== product.id) return { ok: false as const, error: `Name: "${name}" already belongs to another product` };
     return renamed;
   }
 
@@ -167,7 +169,7 @@ export function planImport(
     const owner = ownerOfSlug(slug);
     if (owner) {
       if (owner.kind === row.kind && owner.gameId === place.gameId) return owner;
-      messages.push(`Name: „${row.name}“ gehört schon zu einem anderen Produkt (andere Produktart oder anderes Spiel)`);
+      messages.push(`Name: "${row.name}" already belongs to another product (different product type or TCG)`);
       return undefined;
     }
 
@@ -184,7 +186,7 @@ export function planImport(
       createdAt: options.now,
       ...(options.hideNewProducts && { hidden: true }),
     };
-    const product = validateForm(productSchema, candidate, FIELD_LABELS);
+    const product = validateForm(productSchema, candidate, FIELD_LABELS, "en");
     if (!product.ok) {
       messages.push(product.error);
       return undefined;
@@ -197,8 +199,8 @@ export function planImport(
 
   function productNote(row: ImportRow, product: Product) {
     const firstLine = firstLineOfNewProduct.get(product.id);
-    if (firstLine === undefined) return `Zu vorhandenem Produkt „${product.name}“`;
-    return firstLine === row.line ? "Neues Produkt" : `Neues Produkt wie in Zeile ${firstLine}`;
+    if (firstLine === undefined) return `Added to existing product "${product.name}"`;
+    return firstLine === row.line ? "New product" : `New product, as in row ${firstLine}`;
   }
 
   function ownerOfSlug(slug: string) {
@@ -209,7 +211,7 @@ export function planImport(
     if (!row.gameName) return {};
     const game = context.games.find((candidate) => sameWord(candidate.id, row.gameName) || sameWord(candidate.name, row.gameName));
     if (!game) {
-      messages.push(`TCG: „${row.gameName}“ gibt es nicht – bitte zuerst unter „Spiele & Sets“ anlegen`);
+      messages.push(`TCG: "${row.gameName}" does not exist – please add it first under "TCGs & Sets"`);
       return {};
     }
     // Accessories have no set.
@@ -217,7 +219,7 @@ export function planImport(
     const cardSet = context.cardSets.find(
       (candidate) => candidate.gameId === game.id && (sameWord(candidate.name, row.setName) || sameWord(candidate.code, row.setName)),
     );
-    if (!cardSet) messages.push(`Set: „${row.setName}“ gibt es bei ${game.name} noch nicht – bitte unter „Spiele & Sets“ anlegen`);
+    if (!cardSet) messages.push(`Set: "${row.setName}" does not exist for ${game.name} yet – add it under "TCGs & Sets" or load it in "TCG Catalog"`);
     return { gameId: game.id, setId: cardSet?.id };
   }
 }
@@ -231,22 +233,22 @@ function missingPurchaseData(row: ImportRow): string[] {
     row.origin === undefined && "Herkunft",
     row.taxScheme === undefined && "Steuerart",
   ].filter((label) => label !== false);
-  return missing.map((label) => `${label}: bitte ausfüllen (neuer Artikel)`);
+  return missing.map((label) => `${label}: required (new item)`);
 }
 
 function describeChanges(existing: ExistingOffer, offer: Offer, internals: OfferInternals): string[] {
   const before = existing.offer;
   const { internals: beforeInternals } = existing;
   const changes: string[] = [];
-  if (offer.priceCents !== before.priceCents) changes.push(`VK ${formatEuro(before.priceCents)} → ${formatEuro(offer.priceCents)}`);
-  if (offer.stock !== before.stock) changes.push(`Bestand ${before.stock} → ${offer.stock}`);
-  if (offer.taxScheme !== before.taxScheme && offer.taxScheme) changes.push(`Steuerart ergänzt: ${TAX_SCHEMES[offer.taxScheme]}`);
+  if (offer.priceCents !== before.priceCents) changes.push(`Price ${formatEuro(before.priceCents)} → ${formatEuro(offer.priceCents)}`);
+  if (offer.stock !== before.stock) changes.push(`Stock ${before.stock} → ${offer.stock}`);
+  if (offer.taxScheme !== before.taxScheme && offer.taxScheme) changes.push(`Tax scheme added: ${ADMIN_TAX_SCHEMES[offer.taxScheme]}`);
   if (internals.purchasePriceCents !== beforeInternals.purchasePriceCents && internals.purchasePriceCents !== undefined) {
-    changes.push(`EK ergänzt: ${formatEuro(internals.purchasePriceCents)}`);
+    changes.push(`Purchase price added: ${formatEuro(internals.purchasePriceCents)}`);
   }
-  if (internals.origin !== beforeInternals.origin && internals.origin) changes.push(`Herkunft ergänzt: ${PURCHASE_ORIGINS[internals.origin]}`);
+  if (internals.origin !== beforeInternals.origin && internals.origin) changes.push(`Origin added: ${ADMIN_PURCHASE_ORIGINS[internals.origin]}`);
   if (internals.storageLocation !== beforeInternals.storageLocation) {
-    changes.push(`Lagerplatz „${beforeInternals.storageLocation ?? "–"}“ → „${internals.storageLocation}“`);
+    changes.push(`Storage location "${beforeInternals.storageLocation ?? "–"}" → "${internals.storageLocation}"`);
   }
   return changes;
 }
@@ -255,16 +257,16 @@ function describeChanges(existing: ExistingOffer, offer: Offer, internals: Offer
 function keptValueNotes(row: ImportRow, { offer, internals }: ExistingOffer, overwriteStock: boolean): string[] {
   const notes: string[] = [];
   if (!overwriteStock && row.stock !== undefined && row.stock !== offer.stock) {
-    notes.push(`Bestand bleibt ${offer.stock} (Datei: ${row.stock} – nur mit Häkchen „Bestand übernehmen“)`);
+    notes.push(`Stock stays ${offer.stock} (file: ${row.stock} – only with "Take stock from the file" ticked)`);
   }
   if (row.purchasePriceCents !== undefined && internals.purchasePriceCents !== undefined && row.purchasePriceCents !== internals.purchasePriceCents) {
-    notes.push(`EK bleibt ${formatEuro(internals.purchasePriceCents)} (wird nie überschrieben)`);
+    notes.push(`Purchase price stays ${formatEuro(internals.purchasePriceCents)} (never overwritten)`);
   }
   if (row.origin && internals.origin && row.origin !== internals.origin) {
-    notes.push(`Herkunft bleibt ${PURCHASE_ORIGINS[internals.origin]} (wird nie überschrieben)`);
+    notes.push(`Origin stays ${ADMIN_PURCHASE_ORIGINS[internals.origin]} (never overwritten)`);
   }
   if (row.taxScheme && offer.taxScheme && row.taxScheme !== offer.taxScheme) {
-    notes.push(`Steuerart bleibt ${TAX_SCHEMES[offer.taxScheme]} (wird nie überschrieben)`);
+    notes.push(`Tax scheme stays ${ADMIN_TAX_SCHEMES[offer.taxScheme]} (never overwritten)`);
   }
   return notes;
 }

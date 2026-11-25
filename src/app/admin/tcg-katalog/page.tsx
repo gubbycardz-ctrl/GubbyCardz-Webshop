@@ -14,11 +14,11 @@ import { getCatalogRepository } from "@/modules/catalog/server";
 import { inputClass } from "../_components/form-kit";
 import { SyncPanel } from "./sync-panel";
 
-export const metadata: Metadata = { title: "TCG-Katalog" };
+export const metadata: Metadata = { title: "TCG Catalog" };
 
 export default function TcgCatalogPage({ searchParams }: PageProps<"/admin/tcg-katalog">) {
   return (
-    <Suspense fallback={<p className="text-foreground/60">Wird geladen …</p>}>
+    <Suspense fallback={<p className="text-foreground/60">Loading …</p>}>
       <TcgCatalog searchParams={searchParams} />
     </Suspense>
   );
@@ -50,10 +50,9 @@ async function TcgCatalog({ searchParams }: Pick<PageProps<"/admin/tcg-katalog">
   return (
     <div className="flex flex-col gap-8">
       <section>
-        <h1 className="text-3xl font-bold">TCG-Katalog</h1>
+        <h1 className="text-3xl font-bold">TCG Catalog</h1>
         <p className="mt-2 max-w-2xl text-sm text-foreground/70">
-          Alle Sets, aus denen du beim Anlegen eines Produkts wählst. Neue Sets holst du aus der Quelle – erst nach einer Vorschau und
-          deiner Freigabe. Produkte und Bestände bleiben dabei unberührt.
+          All sets you can pick from when creating a product. Load new sets from the source – only after a preview and your approval. Products and stock are never touched.
         </p>
       </section>
 
@@ -62,12 +61,12 @@ async function TcgCatalog({ searchParams }: Pick<PageProps<"/admin/tcg-katalog">
       <section>
         <h2 className="text-xl font-semibold">Sets</h2>
         {games.length === 0 ? (
-          <p className="mt-3 text-foreground/60">Noch keine Spiele. Mit „Prüfen“ oben legt die Pokémon-Quelle das Spiel an.</p>
+          <p className="mt-3 text-foreground/60">No TCGs yet. “Check” above lets the Pokémon source create the TCG.</p>
         ) : (
           <>
             <form method="get" className="mt-3 flex flex-wrap items-end gap-3 text-sm">
               <label className="flex flex-col gap-1">
-                <span className="text-foreground/70">Spiel</span>
+                <span className="text-foreground/70">TCG</span>
                 <select name="spiel" defaultValue={gameId} className={inputClass}>
                   {games.map((game) => (
                     <option key={game.id} value={game.id}>
@@ -77,13 +76,13 @@ async function TcgCatalog({ searchParams }: Pick<PageProps<"/admin/tcg-katalog">
                 </select>
               </label>
               <label className="flex min-w-48 flex-1 flex-col gap-1">
-                <span className="text-foreground/70">Suche (Name, Code, Ära)</span>
-                <input name="q" defaultValue={query} placeholder="z. B. 151 oder Karmesin" className={inputClass} />
+                <span className="text-foreground/70">Search (name, code, era)</span>
+                <input name="q" defaultValue={query} placeholder="e.g. 151 or Prismatic" className={inputClass} />
               </label>
               <label className="flex flex-col gap-1">
                 <span className="text-foreground/70">Status</span>
                 <select name="status" defaultValue={status} className={inputClass}>
-                  <option value="">Alle</option>
+                  <option value="">All</option>
                   {Object.entries(SET_STATUSES).map(([value, label]) => (
                     <option key={value} value={value}>
                       {label}
@@ -94,7 +93,7 @@ async function TcgCatalog({ searchParams }: Pick<PageProps<"/admin/tcg-katalog">
               <label className="flex flex-col gap-1">
                 <span className="text-foreground/70">Region</span>
                 <select name="region" defaultValue={region} className={inputClass}>
-                  <option value="">Alle</option>
+                  <option value="">All</option>
                   {Object.entries(SET_REGIONS).map(([value, label]) => (
                     <option key={value} value={value}>
                       {label}
@@ -103,14 +102,14 @@ async function TcgCatalog({ searchParams }: Pick<PageProps<"/admin/tcg-katalog">
                 </select>
               </label>
               <button type="submit" className="rounded-lg border border-foreground/20 px-4 py-2 font-medium hover:bg-foreground/5">
-                Filtern
+                Filter
               </button>
             </form>
 
             <p className="mt-3 text-sm text-foreground/60">
-              {filtered.length} von {allSets.length} Sets
-              {filtered.length > shown.length && ` – die ersten ${shown.length} werden angezeigt, bitte mit der Suche eingrenzen`}
-              {duplicates.size > 0 && ` · ${duplicates.size} mögliche Dubletten (markiert)`}
+              {filtered.length} of {allSets.length} sets
+              {filtered.length > shown.length && ` – showing the first ${shown.length}, narrow it down with the search`}
+              {duplicates.size > 0 && ` · ${duplicates.size} possible duplicates (marked)`}
             </p>
             <SetTable sets={shown} productCounts={productCounts} duplicates={duplicates} />
           </>
@@ -121,7 +120,7 @@ async function TcgCatalog({ searchParams }: Pick<PageProps<"/admin/tcg-katalog">
 }
 
 function SetTable({ sets, productCounts, duplicates }: { sets: CardSet[]; productCounts: Map<string, number>; duplicates: Set<string> }) {
-  if (sets.length === 0) return <p className="mt-4 text-foreground/60">Keine Sets gefunden.</p>;
+  if (sets.length === 0) return <p className="mt-4 text-foreground/60">No sets found.</p>;
   return (
     <div className="mt-3 overflow-x-auto rounded-xl border border-foreground/10">
       <table className="w-full min-w-176 text-left text-sm">
@@ -129,12 +128,12 @@ function SetTable({ sets, productCounts, duplicates }: { sets: CardSet[]; produc
           <tr>
             <th className="px-3 py-2 font-medium">Set</th>
             <th className="px-3 py-2 font-medium">Code</th>
-            <th className="px-3 py-2 font-medium">Ära</th>
-            <th className="px-3 py-2 font-medium">Typ</th>
+            <th className="px-3 py-2 font-medium">Era</th>
+            <th className="px-3 py-2 font-medium">Type</th>
             <th className="px-3 py-2 font-medium">Region</th>
-            <th className="px-3 py-2 font-medium">Erscheint</th>
+            <th className="px-3 py-2 font-medium">Releases</th>
             <th className="px-3 py-2 font-medium">Status</th>
-            <th className="px-3 py-2 text-right font-medium">Produkte</th>
+            <th className="px-3 py-2 text-right font-medium">Products</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-foreground/10">
@@ -149,7 +148,7 @@ function SetTable({ sets, productCounts, duplicates }: { sets: CardSet[]; produc
                       {name}
                     </span>
                   ))}
-                {duplicates.has(set.id) && <span className="mt-1 inline-block rounded-full bg-brand-red/10 px-2 py-0.5 text-xs text-brand-red">Dublette?</span>}
+                {duplicates.has(set.id) && <span className="mt-1 inline-block rounded-full bg-brand-red/10 px-2 py-0.5 text-xs text-brand-red">Duplicate?</span>}
               </td>
               <td className="px-3 py-2 font-mono text-xs">{set.code}</td>
               <td className="px-3 py-2">{set.era ?? "–"}</td>
@@ -167,5 +166,5 @@ function SetTable({ sets, productCounts, duplicates }: { sets: CardSet[]; produc
 }
 
 function formatDate(isoDate: string) {
-  return new Date(`${isoDate}T00:00:00`).toLocaleDateString("de-DE");
+  return new Date(`${isoDate}T00:00:00`).toLocaleDateString("en-GB");
 }

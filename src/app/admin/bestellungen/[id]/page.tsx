@@ -6,17 +6,19 @@ import { requireAdmin } from "@/modules/auth/server";
 import { getCatalogRepository } from "@/modules/catalog/server";
 import { ORDER_STATUS_LABELS, orderNumber, packingList, type Order } from "@/modules/orders";
 import { getOrderRepository } from "@/modules/orders/server";
-import { SHIPPING_COUNTRIES } from "@/modules/shipping";
+import type { ShippingCountry } from "@/modules/shipping";
 import { formatEuro } from "@/shared/money";
 import { ConfirmButton } from "../../_components/confirm-button";
 import { cancelOrder, markOrderPaid, markOrderShipped } from "../../order-actions";
 import { formatDateTime } from "../format";
 
-export const metadata: Metadata = { title: "Bestellung" };
+export const metadata: Metadata = { title: "Order" };
+
+const COUNTRY_NAMES = { DE: "Germany", NL: "Netherlands" } satisfies Record<ShippingCountry, string>;
 
 export default function AdminOrderPage({ params }: PageProps<"/admin/bestellungen/[id]">) {
   return (
-    <Suspense fallback={<p className="text-foreground/60">Wird geladen …</p>}>
+    <Suspense fallback={<p className="text-foreground/60">Loading …</p>}>
       <OrderDetails params={params} />
     </Suspense>
   );
@@ -33,23 +35,23 @@ async function OrderDetails({ params }: Pick<PageProps<"/admin/bestellungen/[id]
     <div className="flex flex-col gap-8">
       <section>
         <Link href={`/admin/bestellungen?status=${order.status}`} className="text-sm text-foreground/60 hover:text-brand-blue">
-          ← Bestellungen
+          ← Orders
         </Link>
         <h1 className="mt-2 text-3xl font-bold">
-          Bestellung <span className="font-mono">{number}</span>
+          Order <span className="font-mono">{number}</span>
         </h1>
         <p className="mt-1 text-sm text-foreground/60">
-          {ORDER_STATUS_LABELS[order.status]} · bestellt am {formatDateTime(order.createdAt)}
-          {order.paidAt && ` · bezahlt am ${formatDateTime(order.paidAt)}`}
-          {order.shippedAt && ` · versendet am ${formatDateTime(order.shippedAt)}`}
-          {order.cancelledAt && ` · storniert am ${formatDateTime(order.cancelledAt)}`}
+          {ORDER_STATUS_LABELS[order.status]} · ordered on {formatDateTime(order.createdAt)}
+          {order.paidAt && ` · paid on ${formatDateTime(order.paidAt)}`}
+          {order.shippedAt && ` · shipped on ${formatDateTime(order.shippedAt)}`}
+          {order.cancelledAt && ` · cancelled on ${formatDateTime(order.cancelledAt)}`}
         </p>
         <StatusActions order={order} number={number} />
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-foreground/10 p-4">
-          <h2 className="font-semibold">Lieferadresse</h2>
+          <h2 className="font-semibold">Shipping address</h2>
           <address className="mt-2 not-italic leading-relaxed">
             {order.shippingAddress.name}
             <br />
@@ -57,11 +59,11 @@ async function OrderDetails({ params }: Pick<PageProps<"/admin/bestellungen/[id]
             <br />
             {order.shippingAddress.postalCode} {order.shippingAddress.city}
             <br />
-            {SHIPPING_COUNTRIES[order.shippingAddress.country].label}
+            {COUNTRY_NAMES[order.shippingAddress.country]}
           </address>
         </div>
         <div className="rounded-xl border border-foreground/10 p-4">
-          <h2 className="font-semibold">Kontakt</h2>
+          <h2 className="font-semibold">Contact</h2>
           <a href={`mailto:${order.email}`} className="mt-2 block text-brand-blue hover:underline">
             {order.email}
           </a>
@@ -79,13 +81,13 @@ function StatusActions({ order, number }: { order: Order; number: string }) {
       <div className="mt-4 flex flex-wrap gap-3">
         <ConfirmButton
           action={markOrderPaid.bind(null, order.id)}
-          confirmMessage={`Zahlung von ${formatEuro(order.totalCents)} für Bestellung ${number} ist eingegangen?`}
-          label="Als bezahlt markieren"
+          confirmMessage={`Has the payment of ${formatEuro(order.totalCents)} for order ${number} arrived?`}
+          label="Mark as paid"
         />
         <ConfirmButton
           action={cancelOrder.bind(null, order.id)}
-          confirmMessage={`Bestellung ${number} wirklich stornieren? Die Artikel gehen zurück in den Bestand.`}
-          label="Stornieren"
+          confirmMessage={`Really cancel order ${number}? The items go back into stock.`}
+          label="Cancel order"
           variant="danger"
         />
       </div>
@@ -96,8 +98,8 @@ function StatusActions({ order, number }: { order: Order; number: string }) {
       <div className="mt-4">
         <ConfirmButton
           action={markOrderShipped.bind(null, order.id)}
-          confirmMessage={`Bestellung ${number} ist gepackt und versendet?`}
-          label="Als versendet markieren"
+          confirmMessage={`Is order ${number} packed and shipped?`}
+          label="Mark as shipped"
         />
       </div>
     );
@@ -115,16 +117,16 @@ async function PackingList({ order }: { order: Order }) {
   const locations = new Map(order.lines.map((line) => [line.offerId, internals.get(line.offerId)?.storageLocation]));
   return (
     <section>
-      <h2 className="text-xl font-semibold">Packliste</h2>
+      <h2 className="text-xl font-semibold">Packing list</h2>
       <div className="mt-3 overflow-x-auto rounded-xl border border-foreground/10">
         <table className="w-full text-left text-sm">
           <thead className="bg-foreground/5 text-foreground/70">
             <tr>
-              <th className="px-4 py-2 font-medium">Lagerplatz</th>
-              <th className="px-4 py-2 text-right font-medium">Menge</th>
-              <th className="px-4 py-2 font-medium">Artikel</th>
-              <th className="px-4 py-2 text-right font-medium">Einzelpreis</th>
-              <th className="px-4 py-2 text-right font-medium">Summe</th>
+              <th className="px-4 py-2 font-medium">Location</th>
+              <th className="px-4 py-2 text-right font-medium">Qty</th>
+              <th className="px-4 py-2 font-medium">Item</th>
+              <th className="px-4 py-2 text-right font-medium">Unit price</th>
+              <th className="px-4 py-2 text-right font-medium">Total</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-foreground/10">
@@ -144,11 +146,11 @@ async function PackingList({ order }: { order: Order }) {
         </table>
       </div>
       <dl className="mt-4 grid grid-cols-[1fr_auto] gap-x-6 gap-y-1 text-right text-sm">
-        <dt>Zwischensumme</dt>
+        <dt>Subtotal</dt>
         <dd>{formatEuro(order.subtotalCents)}</dd>
-        <dt>Versand ({order.shippingAddress.country})</dt>
+        <dt>Shipping ({order.shippingAddress.country})</dt>
         <dd>{formatEuro(order.shippingCents)}</dd>
-        <dt className="font-semibold">Gesamtsumme</dt>
+        <dt className="font-semibold">Grand total</dt>
         <dd className="font-semibold">{formatEuro(order.totalCents)}</dd>
       </dl>
     </section>

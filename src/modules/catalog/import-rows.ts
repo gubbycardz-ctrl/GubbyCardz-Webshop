@@ -143,15 +143,15 @@ export function parseImportSheet(sheet: readonly SpreadsheetRow[]): ParsedSheet 
   const columns = matchColumns(header);
   const missing = REQUIRED_COLUMNS.filter((column) => columns.indexes[column] === undefined);
   if (missing.length > 0) {
-    return { ok: false, error: `Spalten fehlen in der ersten Zeile: ${missing.map((column) => IMPORT_COLUMNS[column][0]).join(", ")}` };
+    return { ok: false, error: `Columns missing in the first row: ${missing.map((column) => IMPORT_COLUMNS[column][0]).join(", ")}` };
   }
 
   const lines = body
     .map((cells, index) => ({ cells, line: index + 2 }))
     .filter(({ cells }) => cells.some((cell) => cellText(cell) !== ""));
-  if (lines.length === 0) return { ok: false, error: "Die Datei enthält keine Artikel." };
+  if (lines.length === 0) return { ok: false, error: "The file contains no items." };
   if (lines.length > MAX_IMPORT_ROWS) {
-    return { ok: false, error: `Höchstens ${MAX_IMPORT_ROWS} Artikel pro Datei – bitte aufteilen.` };
+    return { ok: false, error: `At most ${MAX_IMPORT_ROWS} items per file – please split it.` };
   }
 
   const rows: ImportRow[] = [];
@@ -191,7 +191,7 @@ function parseRow(cell: CellReader, line: number): { ok: true; row: ImportRow } 
   const messages: string[] = [];
   const required = (column: Column) => {
     const value = cellText(cell(column));
-    if (value === "") messages.push(`${IMPORT_COLUMNS[column][0]}: bitte ausfüllen`);
+    if (value === "") messages.push(`${IMPORT_COLUMNS[column][0]}: required`);
     return value;
   };
   const optional = (column: Column) => cellText(cell(column)) || undefined;
@@ -199,14 +199,14 @@ function parseRow(cell: CellReader, line: number): { ok: true; row: ImportRow } 
     const value = cellText(cell(column));
     if (value === "") return undefined;
     const found = lookup.get(normalize(value));
-    if (found === undefined) messages.push(`${IMPORT_COLUMNS[column][0]}: „${value}“ ist unbekannt`);
+    if (found === undefined) messages.push(`${IMPORT_COLUMNS[column][0]}: "${value}" is not recognized`);
     return found;
   };
   const money = (column: Column) => {
     const value = cell(column);
     if (cellText(value) === "") return undefined;
     const cents = parseMoney(value);
-    if (cents === null) messages.push(`${IMPORT_COLUMNS[column][0]}: „${cellText(value)}“ ist kein Euro-Betrag`);
+    if (cents === null) messages.push(`${IMPORT_COLUMNS[column][0]}: "${cellText(value)}" is not a euro amount`);
     return cents ?? undefined;
   };
 
@@ -218,7 +218,7 @@ function parseRow(cell: CellReader, line: number): { ok: true; row: ImportRow } 
   const price = money("price");
   const stockText = cellText(cell("stock"));
   const stock = stockText === "" ? undefined : parseCount(stockText);
-  if (stock === null) messages.push(`Bestand: „${stockText}“ ist keine ganze Zahl`);
+  if (stock === null) messages.push(`Bestand: "${stockText}" is not a whole number`);
 
   const common = {
     line,
@@ -258,7 +258,7 @@ function parseProductPart(category: CategoryChoice, cell: CellReader, fields: Fi
   if (category.kind === "sealed") {
     const conditionText = cellText(cell("condition"));
     if (!SEALED_CONDITIONS.has(normalize(conditionText))) {
-      messages.push(`Zustand: „${conditionText}“ passt nicht zu Sealed-Ware (leer lassen oder „Neu/Sealed“)`);
+      messages.push(`Zustand: "${conditionText}" does not apply to sealed products (leave it empty or use "Neu/Sealed")`);
     }
     if (!language) return undefined;
     return { kind: "sealed", category: category.category, variant: { type: "sealed", language } };
@@ -285,8 +285,8 @@ function parseCondition(text: string, certNumber: string | undefined): CardVaria
 
   const grading = GRADING_PATTERN.exec(text);
   const gradingCompany = grading && GRADING_COMPANIES_BY_NAME.get(normalize(grading[1]));
-  if (!grading || !gradingCompany) return { error: `Zustand: „${text}“ ist unbekannt (z. B. „NM“ oder „PSA 10“)` };
-  if (!certNumber) return { error: "Zertifikat: bitte ausfüllen (gegradete Karte)" };
+  if (!grading || !gradingCompany) return { error: `Zustand: "${text}" is not recognized (e.g. "NM" or "PSA 10")` };
+  if (!certNumber) return { error: "Zertifikat: required (graded card)" };
   return { type: "graded-card", gradingCompany, grade: Number(grading[2].replace(",", ".")), certNumber };
 }
 

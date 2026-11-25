@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CardSet } from "./game";
-import { describeCardSet, displaySetName, duplicateSetIds, groupSetsByEra, matchesSetSearch } from "./set-labels";
+import { NO_ERA, describeCardSet, displaySetName, duplicateSetIds, eraOptions, groupSetsByEra, matchesSetSearch, setsOfEra } from "./set-labels";
 
 const base: CardSet = { id: "s1", gameId: "pokemon", name: "Scarlet & Violet", code: "SVI" };
 
@@ -69,5 +69,32 @@ describe("duplicateSetIds", () => {
       { ...japanese, id: "c", name: "スカーレットex" },
     ];
     expect([...duplicateSetIds(sets)].sort()).toEqual(["a", "c"]);
+  });
+});
+
+describe("eraOptions and setsOfEra", () => {
+  const sets: CardSet[] = [
+    { ...base, id: "old", era: "Sword & Shield", releaseDate: "2020-02-07" },
+    { ...base, id: "old2", era: "Sword & Shield", releaseDate: "2023-01-20" },
+    { ...base, id: "new", era: "Scarlet & Violet", releaseDate: "2023-03-31" },
+    { ...base, id: "hand" },
+  ];
+
+  it("lists eras by their newest set and offers sets without an era last", () => {
+    expect(eraOptions(sets)).toEqual([
+      { value: "Scarlet & Violet", label: "Scarlet & Violet" },
+      { value: "Sword & Shield", label: "Sword & Shield" },
+      { value: NO_ERA, label: "No era" },
+    ]);
+  });
+
+  it("offers no eras at all when no set has one, so the dropdown can stay away", () => {
+    expect(eraOptions([{ ...base, id: "a" }])).toEqual([]);
+  });
+
+  it("filters sets by era, by no era, or not at all", () => {
+    expect(setsOfEra(sets, "Sword & Shield").map((set) => set.id)).toEqual(["old", "old2"]);
+    expect(setsOfEra(sets, NO_ERA).map((set) => set.id)).toEqual(["hand"]);
+    expect(setsOfEra(sets, "").map((set) => set.id)).toEqual(["old", "old2", "new", "hand"]);
   });
 });

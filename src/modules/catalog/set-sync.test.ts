@@ -51,7 +51,7 @@ describe("planSetSync – sets that came from the source", () => {
   it("refreshes what the source changed and says what", () => {
     const { items } = plan([{ ...scarletViolet, releaseDate: "2023-04-07" }], [stored]);
     expect(items[0]).toMatchObject({ status: "update", set: { releaseDate: "2023-04-07", id: stored.id } });
-    expect(items[0].changes).toEqual(["Erscheinungsdatum: 2023-03-31 → 2023-04-07"]);
+    expect(items[0].changes).toEqual(["Release date: 2023-03-31 → 2023-04-07"]);
   });
 
   it("turns an announced set into a released one once its date has passed", () => {
@@ -86,13 +86,13 @@ describe("planSetSync – sets entered by hand", () => {
   it("finds a hand-made set by its name when the code differs and notes the difference", () => {
     const { items } = plan([scarletViolet], [{ ...handMade, code: "151" }]);
     expect(items[0]).toMatchObject({ status: "enrich", set: { id: "pokemon-svi", code: "151" } });
-    expect(items[0].notes).toEqual(["Code weicht ab (vorhanden: 151, Quelle: SVI) – nicht überschrieben"]);
+    expect(items[0].notes).toEqual(["Code differs (existing: 151, source: SVI) – not overwritten"]);
   });
 
   it("does not overwrite a differing date, it notes it", () => {
     const { items } = plan([scarletViolet], [{ ...handMade, releaseDate: "2023-04-01" }]);
     expect(items[0].set.releaseDate).toBe("2023-04-01");
-    expect(items[0].notes).toContain("Erscheinungsdatum weicht ab (vorhanden: 2023-04-01, Quelle: 2023-03-31) – nicht überschrieben");
+    expect(items[0].notes).toContain("Release date differs (existing: 2023-04-01, source: 2023-03-31) – not overwritten");
   });
 
   it("leaves a hand-made set alone on a repeat run once it is linked", () => {
@@ -103,7 +103,7 @@ describe("planSetSync – sets entered by hand", () => {
   it("does not merge when two hand-made sets fit – it creates the set and warns about the lookalikes", () => {
     const { items } = plan([scarletViolet], [handMade, { ...handMade, id: "pokemon-svi-2", name: "Scarlet & Violet (zweite)" }]);
     expect(items[0].status).toBe("create");
-    expect(items[0].notes[0]).toContain("Mögliche Dublette");
+    expect(items[0].notes[0]).toContain("Possible duplicate");
   });
 
   it("never matches a Japanese set to a hand-made one", () => {
@@ -137,7 +137,7 @@ describe("planSetSync – contradictory source data", () => {
   it("skips sets with the same name and date in one market and says which ones", () => {
     const { items } = plan([twin("CS1a"), twin("CS1b"), twin("SV1a", { releaseDate: "2023-03-10" })]);
     expect(items.map((item) => item.status)).toEqual(["conflict", "conflict", "create"]);
-    expect(items[0].notes).toEqual(["Gleicher Name und gleiches Datum wie CS1b – die Quelle ist hier widersprüchlich, nicht übernommen"]);
+    expect(items[0].notes).toEqual(["Same name and date as CS1b – the source contradicts itself here, skipped"]);
   });
 
   it("does not report a skipped set as missing from the source, and leaves a stored one alone", () => {

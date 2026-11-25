@@ -11,12 +11,12 @@ import {
   type SetSyncSourceId,
 } from "@/modules/catalog/server";
 
-/** "Prüfen" only reads and compares; "Übernehmen" re-checks the same source and writes the sets. */
+/** "Check" only reads and compares; "Apply" re-checks the same source and writes the sets. */
 export async function syncSets(formData: FormData): Promise<SetSyncOutcome> {
   await requireAdmin();
   const source = formData.get("source");
   if (typeof source !== "string" || !SET_SYNC_SOURCE_IDS.includes(source as SetSyncSourceId)) {
-    return { ok: false, error: "Unbekannte Quelle." };
+    return { ok: false, error: "Unknown source." };
   }
   if (formData.get("intent") !== "apply") return previewSetSync(source as SetSyncSourceId);
 

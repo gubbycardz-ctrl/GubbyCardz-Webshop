@@ -53,3 +53,23 @@ export function duplicateSetIds(sets: readonly CardSet[]): Set<string> {
   }
   return new Set([...groups.values()].filter((ids) => ids.length > 1).flat());
 }
+
+/** Value of the era filter that stands for sets without an era. */
+export const NO_ERA = "__none__";
+
+/** Eras of a TCG for a dropdown, the era of the newest set first. Empty when no set has an era. */
+export function eraOptions(sets: readonly CardSet[]): { value: string; label: string }[] {
+  const newest = new Map<string, string>();
+  for (const set of sets) {
+    if (set.era) newest.set(set.era, [newest.get(set.era) ?? "", set.releaseDate ?? ""].sort().at(-1) as string);
+  }
+  if (newest.size === 0) return [];
+  const eras = [...newest].sort(([, a], [, b]) => b.localeCompare(a)).map(([era]) => ({ value: era, label: era }));
+  return sets.some((set) => !set.era) ? [...eras, { value: NO_ERA, label: "No era" }] : eras;
+}
+
+/** The sets of one era, or all sets when `era` is empty. */
+export function setsOfEra(sets: readonly CardSet[], era: string): CardSet[] {
+  if (!era) return [...sets];
+  return sets.filter((set) => (era === NO_ERA ? !set.era : set.era === era));
+}

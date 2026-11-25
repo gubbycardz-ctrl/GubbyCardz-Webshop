@@ -16,7 +16,16 @@ export {
   type CardSet,
   type Game,
 } from "./game";
-export { describeCardSet, displaySetName, duplicateSetIds, groupSetsByEra, matchesSetSearch } from "./set-labels";
+export {
+  NO_ERA,
+  describeCardSet,
+  displaySetName,
+  duplicateSetIds,
+  eraOptions,
+  groupSetsByEra,
+  matchesSetSearch,
+  setsOfEra,
+} from "./set-labels";
 export { isShopVisible, productSchema, type Product, type ProductKind } from "./product";
 export { offerSchema, isOfferTypeAllowedFor, type Offer, type OfferType } from "./offer";
 export {
@@ -28,6 +37,16 @@ export {
   type PurchaseOrigin,
 } from "./offer-internals";
 export { rarityTier, type RarityTier } from "./rarity";
+export {
+  ADMIN_GRADING_COMPANIES,
+  ADMIN_LANGUAGES,
+  ADMIN_PRODUCT_KINDS,
+  ADMIN_PURCHASE_ORIGINS,
+  ADMIN_SEALED_CATEGORIES,
+  ADMIN_TAX_SCHEMES,
+  describeOfferAdmin,
+  describeProductKindAdmin,
+} from "./admin-labels";
 export { PRODUCT_KIND_LABELS, describeOffer, describeProductKind } from "./labels";
 export { IMPORT_COLUMNS, MAX_IMPORT_FILE_BYTES, MAX_IMPORT_ROWS } from "./import-rows";
 export type { ImportRowResult, ImportRowStatus } from "./import-plan";

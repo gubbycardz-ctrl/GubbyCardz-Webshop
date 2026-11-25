@@ -10,7 +10,7 @@ import { toSlug } from "./slug";
 import { keysOf } from "./vocabulary";
 
 // Turns raw admin form fields (always strings) into validated catalog entities.
-// Errors come back as German text ready to show next to the form.
+// Errors come back as English text ready to show next to the form.
 
 export type { FormFields, FormResult };
 
@@ -18,28 +18,28 @@ export const FIELD_LABELS: Record<string, string> = {
   id: "Name",
   slug: "Name",
   name: "Name",
-  gameId: "Spiel",
+  gameId: "TCG",
   setId: "Set",
-  code: "Set-Code",
-  releaseDate: "Erscheinungsdatum",
-  kind: "Produktart",
-  hidden: "Sichtbarkeit",
-  collectorNumber: "Nummer",
-  rarity: "Seltenheit",
-  type: "Angebotsart",
-  language: "Sprache",
-  condition: "Zustand",
-  gradingCompany: "Grading-Firma",
-  grade: "Note",
-  certNumber: "Zertifikatsnummer",
-  priceCents: "Preis",
-  stock: "Bestand",
-  category: "Kategorie",
+  code: "Set code",
+  releaseDate: "Release date",
+  kind: "Product type",
+  hidden: "Visibility",
+  collectorNumber: "Number",
+  rarity: "Rarity",
+  type: "Offer type",
+  language: "Language",
+  condition: "Condition",
+  gradingCompany: "Grading company",
+  grade: "Grade",
+  certNumber: "Certificate number",
+  priceCents: "Price",
+  stock: "Stock",
+  category: "Category",
   sku: "SKU",
-  purchasePriceCents: "EK",
-  storageLocation: "Lagerplatz",
-  taxScheme: "Steuerart",
-  origin: "Herkunft",
+  purchasePriceCents: "Purchase price",
+  storageLocation: "Storage location",
+  taxScheme: "Tax scheme",
+  origin: "Origin",
 };
 
 // Stored data may lack tax scheme, origin and EK (created before these fields existed), but
@@ -49,7 +49,7 @@ const offerInternalsFormSchema = offerInternalsSchema.required({ purchasePriceCe
 
 export function parseGameForm(fields: FormFields): FormResult<Game> {
   const name = text(fields.name);
-  return validateForm(gameSchema, { id: toSlug(name), name }, FIELD_LABELS);
+  return validateForm(gameSchema, { id: toSlug(name), name }, FIELD_LABELS, "en");
 }
 
 export function parseCardSetForm(fields: FormFields): FormResult<CardSet> {
@@ -61,7 +61,7 @@ export function parseCardSetForm(fields: FormFields): FormResult<CardSet> {
     name: text(fields.name),
     code,
     releaseDate: optionalText(fields.releaseDate),
-  }, FIELD_LABELS);
+  }, FIELD_LABELS, "en");
 }
 
 /** `createdAt` is passed in rather than read from the clock, so edits can keep the original value. */
@@ -89,7 +89,7 @@ export function parseProductForm(
     kind === "single"
       ? { ...common, slug, collectorNumber, rarity: text(fields.rarity) }
       : { ...common, slug, ...(kind === "sealed" && { category: text(fields.category) }) };
-  return validateForm(productSchema, candidate, FIELD_LABELS);
+  return validateForm(productSchema, candidate, FIELD_LABELS, "en");
 }
 
 export type NewProduct = { product: Product; firstOffer?: { offer: Offer; internals: OfferInternals } };
@@ -112,7 +112,7 @@ export function parseNewProductForm(
     return { ok: false, error: errors.join(" · ") };
   }
   if (!isOfferTypeAllowedFor(product.value.kind, offer.value.type)) {
-    return { ok: false, error: "Angebotsart: passt nicht zur Produktart" };
+    return { ok: false, error: "Offer type: does not fit the product type" };
   }
   return { ok: true, value: { product: product.value, firstOffer: { offer: offer.value, internals: internals.value } } };
 }
@@ -124,7 +124,7 @@ export function parseProductUpdateForm(fields: FormFields, product: Product): Fo
 
 export function parseOfferForm(fields: FormFields, ids: { id: string; productId: string }): FormResult<Offer> {
   const priceCents = parseEuroToCents(text(fields.price));
-  if (priceCents === null) return { ok: false, error: "Preis: bitte als Euro-Betrag eingeben, z. B. 39,99" };
+  if (priceCents === null) return { ok: false, error: "Price: enter a euro amount, e.g. 39.99" };
 
   return validateForm(offerFormSchema, {
     ...ids,
@@ -137,17 +137,18 @@ export function parseOfferForm(fields: FormFields, ids: { id: string; productId:
     priceCents,
     stock: optionalNumber(fields.stock),
     taxScheme: optionalText(fields.taxScheme),
-  }, FIELD_LABELS);
+  }, FIELD_LABELS, "en");
 }
 
 /** Changes only price, stock and tax scheme of an existing offer – the daily business. */
 export function parseOfferUpdateForm(fields: FormFields, offer: Offer): FormResult<Offer> {
   const priceCents = parseEuroToCents(text(fields.price));
-  if (priceCents === null) return { ok: false, error: "Preis: bitte als Euro-Betrag eingeben, z. B. 39,99" };
+  if (priceCents === null) return { ok: false, error: "Price: enter a euro amount, e.g. 39.99" };
   return validateForm(
     offerFormSchema,
     { ...offer, priceCents, stock: optionalNumber(fields.stock), taxScheme: optionalText(fields.taxScheme) },
     FIELD_LABELS,
+    "en",
   );
 }
 
@@ -155,14 +156,14 @@ export function parseOfferUpdateForm(fields: FormFields, offer: Offer): FormResu
 export function parseOfferInternalsForm(fields: FormFields): FormResult<OfferInternals> {
   const purchasePrice = text(fields.purchasePrice);
   const purchasePriceCents = purchasePrice === "" ? undefined : parseEuroToCents(purchasePrice);
-  if (purchasePriceCents === null) return { ok: false, error: "EK: bitte als Euro-Betrag eingeben, z. B. 24,50" };
+  if (purchasePriceCents === null) return { ok: false, error: "Purchase price: enter a euro amount, e.g. 24.50" };
 
   return validateForm(offerInternalsFormSchema, {
     sku: optionalText(fields.sku)?.toUpperCase(),
     purchasePriceCents,
     origin: optionalText(fields.origin),
     storageLocation: optionalText(fields.storageLocation),
-  }, FIELD_LABELS);
+  }, FIELD_LABELS, "en");
 }
 
 // German decimal comma, e.g. grade "9,5".

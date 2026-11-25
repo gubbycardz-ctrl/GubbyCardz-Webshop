@@ -8,9 +8,9 @@ import { ADMIN_LOGIN_PATH, endSession, startAdminSession } from "@/modules/auth/
 const idTokenSchema = z.string().min(1).max(4096);
 
 const SIGN_IN_ERRORS = {
-  "invalid-token": "Anmeldung fehlgeschlagen. Bitte erneut versuchen.",
-  "stale-sign-in": "Die Anmeldung ist zu alt. Bitte erneut anmelden.",
-  "not-admin": "Dieses Konto hat keinen Zugriff auf den Admin-Bereich.",
+  "invalid-token": "Sign-in failed. Please try again.",
+  "stale-sign-in": "The sign-in is too old. Please sign in again.",
+  "not-admin": "This account has no access to the admin area.",
 } as const;
 
 export async function signInAsAdmin(idToken: unknown): Promise<{ error: string }> {

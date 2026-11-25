@@ -5,8 +5,8 @@ import { Suspense } from "react";
 import { describeOffer, describeProductKind, displaySetName, type Product } from "@/modules/catalog";
 import { getAvailableOffers, getCardSet, getGame, getProduct } from "@/modules/catalog/server";
 import { formatEuro } from "@/shared/money";
-import { PriceNote } from "@/app/price-note";
-import { ProductImagePlaceholder } from "@/app/product-image";
+import { PriceNote } from "@/app/(shop)/price-note";
+import { ProductImagePlaceholder } from "@/app/(shop)/product-image";
 import { AddToCartButton } from "./add-to-cart-button";
 
 export async function generateMetadata({ params }: PageProps<"/produkte/[slug]">): Promise<Metadata> {

@@ -54,10 +54,10 @@ const FIELD_LABELS: Record<CatalogField, string> = {
   nameEn: "Name (EN)",
   nameDe: "Name (DE)",
   nameJa: "Name (JA)",
-  era: "Ära",
-  setType: "Typ",
+  era: "Era",
+  setType: "Type",
   region: "Region",
-  releaseDate: "Erscheinungsdatum",
+  releaseDate: "Release date",
   code: "Code",
 };
 
@@ -81,7 +81,7 @@ export function planSetSync(incoming: readonly SourceSet[], existing: readonly C
     const notes: string[] = [];
     const contradicting = contradictions.get(source.sourceId);
     if (contradicting) {
-      notes.push(`Gleicher Name und gleiches Datum wie ${contradicting.join(", ")} – die Quelle ist hier widersprüchlich, nicht übernommen`);
+      notes.push(`Same name and date as ${contradicting.join(", ")} – the source contradicts itself here, skipped`);
       items.push({ status: "conflict", set: toNewSet(source, today), changes: [], notes });
       continue;
     }
@@ -92,7 +92,7 @@ export function planSetSync(incoming: readonly SourceSet[], existing: readonly C
       const candidates = existing.filter((set) => isHandMadeLookalike(set, source) && !claimed.has(set.id));
       if (candidates.length === 1) match = candidates[0];
       else if (candidates.length > 1) {
-        notes.push(`Mögliche Dublette von ${candidates.map((set) => `${set.name} (${set.code})`).join(", ")} – nicht zusammengeführt`);
+        notes.push(`Possible duplicate of ${candidates.map((set) => `${set.name} (${set.code})`).join(", ")} – not merged`);
       }
     }
 
@@ -173,12 +173,12 @@ function completeHandMade(existing: CardSet, source: SourceSet, today: string, n
       changes.push(describeChange(field, undefined, value));
       next[field] = value;
     } else if (existing[field] !== value && (field === "releaseDate" || field === "nameEn")) {
-      notes.push(`${FIELD_LABELS[field]} weicht ab (vorhanden: ${existing[field]}, Quelle: ${value}) – nicht überschrieben`);
+      notes.push(`${FIELD_LABELS[field]} differs (existing: ${existing[field]}, source: ${value}) – not overwritten`);
     }
   }
-  if (existing.code !== source.code) notes.push(`Code weicht ab (vorhanden: ${existing.code}, Quelle: ${source.code}) – nicht überschrieben`);
+  if (existing.code !== source.code) notes.push(`Code differs (existing: ${existing.code}, source: ${source.code}) – not overwritten`);
   if (!existing.sourceId) {
-    changes.push("Verknüpft mit der Quelle");
+    changes.push("Linked to the source");
     next.sourceId = source.sourceId;
   }
   if (!existing.status && next.releaseDate) {

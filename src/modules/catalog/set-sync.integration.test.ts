@@ -134,7 +134,7 @@ describe("set sync", () => {
     const failing = async () => Promise.reject(new Error("HTTP 503"));
     const result = await runSetSync("pokemon", { repository, getJson: failing, today: TODAY });
     expect(result).toMatchObject({ ok: false });
-    expect(!result.ok && result.error).toContain("Es wurde nichts geändert");
+    expect(!result.ok && result.error).toContain("Nothing was changed");
     expect(await repository.listGames()).toEqual([]);
   });
 });

@@ -8,28 +8,29 @@ export const metadata: Metadata = { title: "Import" };
 
 const TEMPLATE_URL = "/vorlagen/produktimport-vorlage.xlsx";
 
-// What each column expects – kept next to the form, where the questions come up.
+// What each column expects – kept next to the form, where the questions come up. The column titles stay German:
+// they are the headers of the Excel template.
 const COLUMN_HELP: [column: string, required: string, values: string][] = [
-  ["SKU", "immer", "Lagernummer, z. B. PKM-SIT-BB-DE-001 – Schlüssel für spätere Importe"],
-  ["Name", "immer", "Produktname; gleicher Name = gleiches Produkt (z. B. eine Karte in mehreren Zuständen)"],
-  ["TCG", "außer Zubehör", "Spiel wie unter „Spiele & Sets“, z. B. Pokémon, One Piece"],
-  ["Set", "Einzelkarten", "Name oder Code eines vorhandenen Sets; bei Sealed freiwillig"],
-  ["Kategorie", "immer", "Einzelkarte, Slab, Display, Booster, Booster Bundle, Elite Trainer Box, Tin, Blister, Collection, Deck, Sonstiges, Zubehör"],
-  ["Nummer, Seltenheit", "Einzelkarten", "z. B. 14/102 und Holo Rare"],
-  ["Sprache", "außer Zubehör", "Deutsch, Englisch, Japanisch, Chinesisch (vereinfacht)"],
-  ["Zustand", "Einzelkarten", "NM, LP … oder PSA 10, BGS 8.5, CGC 9.5; bei Sealed leer oder Neu/Sealed"],
-  ["Zertifikat", "Slabs", "Zertifikatsnummer vom Grading"],
-  ["Bestand", "neue Artikel", "ganze Zahl"],
-  ["EK, VK", "VK immer, EK bei neuen", "Euro, z. B. 24,50"],
-  ["Steuerart", "neue Artikel", "Regelbesteuert oder Differenzbesteuert"],
-  ["Herkunft", "neue Artikel", "Privat oder Gewerblich"],
-  ["Lagerplatz", "–", "freier Text, z. B. SEALED-01"],
-  ["Bilddatei", "–", "wird noch nicht übernommen (Bilder-Upload folgt)"],
+  ["SKU", "always", "Stock number, e.g. PKM-SIT-BB-DE-001 – the key for later imports"],
+  ["Name", "always", "Product name; same name = same product (e.g. one card in several conditions)"],
+  ["TCG", "except accessories", "TCG as under “TCGs & Sets”, e.g. Pokémon, One Piece"],
+  ["Set", "single cards", "Name or code of an existing set; optional for sealed"],
+  ["Kategorie", "always", "Einzelkarte, Slab, Display, Booster, Booster Bundle, Elite Trainer Box, Tin, Blister, Collection, Deck, Sonstiges, Zubehör"],
+  ["Nummer, Seltenheit", "single cards", "e.g. 14/102 and Holo Rare"],
+  ["Sprache", "except accessories", "German, English, Japanese, Chinese (Simplified)"],
+  ["Zustand", "single cards", "NM, LP … or PSA 10, BGS 8.5, CGC 9.5; empty or New/Sealed for sealed products"],
+  ["Zertifikat", "slabs", "Certificate number from the grading company"],
+  ["Bestand", "new items", "whole number"],
+  ["EK, VK", "VK always, EK for new items", "Euros, e.g. 24,50 (EK = purchase price, VK = selling price)"],
+  ["Steuerart", "new items", "Standard (Regelbesteuert) or Margin (Differenzbesteuert)"],
+  ["Herkunft", "new items", "Private or Commercial"],
+  ["Lagerplatz", "–", "free text, e.g. SEALED-01"],
+  ["Bilddatei", "–", "not imported yet (image upload comes later)"],
 ];
 
 export default function AdminImportPage() {
   return (
-    <Suspense fallback={<p className="text-foreground/60">Wird geladen …</p>}>
+    <Suspense fallback={<p className="text-foreground/60">Loading …</p>}>
       <ImportPage />
     </Suspense>
   );
@@ -40,12 +41,12 @@ async function ImportPage() {
   return (
     <div className="flex flex-col gap-8">
       <section>
-        <h1 className="text-3xl font-bold">Produkte importieren</h1>
+        <h1 className="text-3xl font-bold">Import products</h1>
         <p className="mt-2 text-sm text-foreground/70">
-          Erst <strong>Prüfen</strong> – dabei wird nichts gespeichert. Importiert wird nur eine Datei ohne Fehler. Gelesen wird
-          das erste Tabellenblatt, höchstens {MAX_IMPORT_ROWS} Zeilen.{" "}
+          Start with <strong>Check</strong> – nothing is saved by it. Only a file without errors is imported. The first sheet is read,
+          at most {MAX_IMPORT_ROWS} rows.{" "}
           <a href={TEMPLATE_URL} download className="text-brand-blue hover:underline">
-            Vorlage herunterladen
+            Download template
           </a>
         </p>
       </section>
@@ -53,25 +54,25 @@ async function ImportPage() {
       <ImportForm />
 
       <section className="text-sm">
-        <h2 className="text-xl font-semibold">Was passiert mit bestehenden SKUs?</h2>
+        <h2 className="text-xl font-semibold">What happens to existing SKUs?</h2>
         <ul className="mt-2 list-disc space-y-1 pl-5">
-          <li>Eine SKU, die es schon gibt, wird aktualisiert – nie doppelt angelegt.</li>
-          <li>Übernommen werden VK, Name und Lagerplatz.</li>
-          <li>EK, Herkunft und Steuerart werden nur ergänzt, wenn sie fehlen – nie überschrieben.</li>
-          <li>Der Bestand bleibt, außer das Häkchen „Bestand übernehmen“ ist gesetzt.</li>
-          <li>TCG, Set, Kategorie, Sprache und Zustand ändern sich nicht – das geht unter „Produkte“.</li>
+          <li>A SKU that already exists is updated – never created twice.</li>
+          <li>Price, name and storage location are taken over.</li>
+          <li>Purchase price, origin and tax scheme are only filled in when missing – never overwritten.</li>
+          <li>Stock stays as it is, unless “Take stock from the file” is ticked.</li>
+          <li>TCG, set, category, language and condition do not change – do that under “Products”.</li>
         </ul>
       </section>
 
       <section>
-        <h2 className="text-xl font-semibold">Spalten</h2>
+        <h2 className="text-xl font-semibold">Columns</h2>
         <div className="mt-3 overflow-x-auto rounded-xl border border-foreground/10">
           <table className="w-full text-left text-sm">
             <thead className="bg-foreground/5 text-foreground/70">
               <tr>
-                <th className="px-3 py-2 font-medium">Spalte</th>
-                <th className="px-3 py-2 font-medium">Pflicht</th>
-                <th className="px-3 py-2 font-medium">Werte</th>
+                <th className="px-3 py-2 font-medium">Column</th>
+                <th className="px-3 py-2 font-medium">Required</th>
+                <th className="px-3 py-2 font-medium">Values</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-foreground/10">
@@ -85,7 +86,7 @@ async function ImportPage() {
             </tbody>
           </table>
         </div>
-        <p className="mt-2 text-sm text-foreground/60">TCG und Sets müssen vorher unter „Spiele & Sets“ angelegt sein.</p>
+        <p className="mt-2 text-sm text-foreground/60">TCGs and sets must exist beforehand – under “TCGs & Sets”, or load them in “TCG Catalog”.</p>
       </section>
     </div>
   );

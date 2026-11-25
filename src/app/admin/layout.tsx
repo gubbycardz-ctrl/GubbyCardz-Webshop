@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function AdminLayout({ children }: LayoutProps<"/admin">) {
   return (
-    <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
+    <div lang="en" className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
       <Suspense>
         <AdminBar />
       </Suspense>
@@ -29,16 +29,16 @@ async function AdminBar() {
     <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-foreground/10 pb-4 text-sm">
       <nav className="flex gap-4 font-medium">
         <Link href="/admin" className="hover:text-brand-blue">
-          Spiele & Sets
+          TCGs & Sets
         </Link>
         <Link href="/admin/produkte" className="hover:text-brand-blue">
-          Produkte
+          Products
         </Link>
         <Link href="/admin/bestellungen" className="hover:text-brand-blue">
-          Bestellungen
+          Orders
         </Link>
         <Link href="/admin/tcg-katalog" className="hover:text-brand-blue">
-          TCG-Katalog
+          TCG Catalog
         </Link>
         <Link href="/admin/import" className="hover:text-brand-blue">
           Import
@@ -47,7 +47,7 @@ async function AdminBar() {
       <form action={signOut} className="flex items-center gap-3">
         <span className="text-foreground/60">{user.email}</span>
         <button type="submit" className="rounded-lg border border-foreground/20 px-3 py-1.5 hover:bg-foreground/5">
-          Abmelden
+          Sign out
         </button>
       </form>
     </div>
