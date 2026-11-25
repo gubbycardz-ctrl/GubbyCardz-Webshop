@@ -42,3 +42,13 @@ test("cart warns when the maximum order value is exceeded", async ({ page }) => 
   await expect(page.getByText(/Zwischensumme \(2 Artikel\):\s*518,99\s€/)).toBeVisible();
   await expect(page.getByRole("main").getByRole("alert")).toContainText("Wir versenden versichert bis 500,00");
 });
+
+test("a hand-made cart cookie cannot buy a hidden product", async ({ page, context }) => {
+  // "entwurf-tin-en" belongs to a hidden product in the seed data – only a forged cookie can name it.
+  await context.addCookies([{ name: "cart", value: "entwurf-tin-en.1", url: "http://localhost:3000" }]);
+
+  await page.goto("/warenkorb");
+  await expect(page.getByRole("main").getByRole("alert")).toContainText("nicht mehr im Sortiment");
+  await expect(page.getByRole("link", { name: "Zur Kasse" })).toHaveCount(0);
+  await expect(page.getByText(/Entwurf Tin/)).toHaveCount(0);
+});

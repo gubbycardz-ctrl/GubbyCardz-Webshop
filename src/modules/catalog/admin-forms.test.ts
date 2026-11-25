@@ -246,3 +246,20 @@ describe("parseOfferInternalsForm", () => {
     });
   });
 });
+
+describe("parseProductForm – visibility", () => {
+  const sleeves = { kind: "accessory", name: "Sleeves schwarz" };
+  const ids = { id: "p1", createdAt: "2026-01-01T00:00:00.000Z" };
+
+  it("creates visible products unless the hidden box is ticked", () => {
+    const result = parseProductForm(sleeves, ids);
+    expect(result.ok && result.value).not.toHaveProperty("hidden");
+    expect(parseProductForm({ ...sleeves, hidden: "on" }, ids)).toMatchObject({ ok: true, value: { hidden: true } });
+  });
+
+  it("lets an edit publish a hidden product again by leaving the box unticked", () => {
+    const hidden: Product = { id: "p1", kind: "accessory", name: "Sleeves schwarz", slug: "sleeves-schwarz", hidden: true };
+    const result = parseProductUpdateForm({ name: "Sleeves schwarz" }, hidden);
+    expect(result.ok && result.value).not.toHaveProperty("hidden");
+  });
+});

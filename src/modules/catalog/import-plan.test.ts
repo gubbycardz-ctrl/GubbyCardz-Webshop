@@ -41,8 +41,8 @@ function ids() {
   return () => `id-${++next}`;
 }
 
-function plan(rows: ImportRow[], ctx = context(), overwriteStock = false) {
-  return planImport({ rows, errors: [] }, ctx, { overwriteStock, newId: ids(), now: NOW });
+function plan(rows: ImportRow[], ctx = context(), overwriteStock = false, hideNewProducts = false) {
+  return planImport({ rows, errors: [] }, ctx, { overwriteStock, hideNewProducts, newId: ids(), now: NOW });
 }
 
 describe("planImport – new SKUs", () => {
@@ -165,5 +165,20 @@ describe("productSlugsFor", () => {
     const existing = new Map([["SLAB-1", { ...existingBundle, product: single }]]);
     const row: ImportRow = { ...bundleRow, sku: "SLAB-1", name: "Raichu Holo", kind: "single", collectorNumber: "99" };
     expect(productSlugsFor([row, bundleRow], existing)).toEqual(["raichu-holo-14-102", "silberne-sturmwinde-boosterbundle"]);
+  });
+});
+
+describe("planImport – hiding new products", () => {
+  it("creates new products hidden when asked to, and visible otherwise", () => {
+    expect(plan([bundleRow], context(), false, true).products[0]).toMatchObject({ hidden: true });
+    expect(plan([bundleRow]).products[0]).not.toHaveProperty("hidden");
+  });
+
+  it("never changes products that already exist", () => {
+    const ctx = context({
+      existingBySku: new Map([[bundleRow.sku, existingBundle]]),
+      productsBySlug: new Map([[existingBundle.product.slug, existingBundle.product]]),
+    });
+    expect(plan([bundleRow], ctx, false, true).products).toEqual([]);
   });
 });

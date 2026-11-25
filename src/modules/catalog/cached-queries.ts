@@ -1,6 +1,7 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { getCatalogRepository } from "./default-repository";
+import { isShopVisible } from "./product";
 import { pickRecommendations } from "./recommendations";
 
 // Read-side for the shop pages. Cached for minutes so repeated visits (and bots)
@@ -72,7 +73,9 @@ export async function getProduct(slug: string) {
   "use cache";
   cacheLife("minutes");
   cacheTag(CATALOG_CACHE_TAG);
-  return repository().getProductBySlug(slug);
+  const product = await repository().getProductBySlug(slug);
+  // A hidden product has no public page: it is "not found" like any unknown address.
+  return product && isShopVisible(product) ? product : null;
 }
 
 export async function getAvailableOffers(productId: string) {

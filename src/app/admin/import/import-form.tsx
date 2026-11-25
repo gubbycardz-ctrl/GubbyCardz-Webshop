@@ -52,6 +52,16 @@ export function ImportForm() {
         />
       </label>
       <label className="flex items-start gap-2 text-sm">
+        <input type="checkbox" name="hideNewProducts" defaultChecked className="mt-1" />
+        <span>
+          Neue Produkte zuerst unsichtbar anlegen
+          <span className="block text-foreground/60">
+            Sie erscheinen nicht im Shop und sind nicht kaufbar, bis du sie im Produktbereich sichtbar schaltest. Bereits vorhandene
+            Produkte bleiben, wie sie sind.
+          </span>
+        </span>
+      </label>
+      <label className="flex items-start gap-2 text-sm">
         <input type="checkbox" name="overwriteStock" className="mt-1" />
         <span>
           Bestand aus der Datei übernehmen

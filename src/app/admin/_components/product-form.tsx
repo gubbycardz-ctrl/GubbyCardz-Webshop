@@ -99,6 +99,13 @@ export function ProductForm({
           </Field>
         </>
       )}
+      <label className="flex items-start gap-2 text-sm sm:col-span-2">
+        <input type="checkbox" name="hidden" defaultChecked={product?.hidden === true} className="mt-1" />
+        <span>
+          Im Shop unsichtbar (Entwurf)
+          <span className="block text-foreground/60">Nicht sichtbar und nicht kaufbar – nur hier im Admin-Bereich.</span>
+        </span>
+      </label>
       {!product && (
         <fieldset className="mt-2 rounded-xl border border-foreground/10 p-4 sm:col-span-2">
           <legend className="px-1 text-sm font-semibold">Erstes Angebot</legend>

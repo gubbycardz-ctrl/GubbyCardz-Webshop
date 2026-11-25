@@ -11,7 +11,7 @@ import { parseImportSheet, type ImportRow } from "./import-rows";
 // same file, so the import writes exactly what the preview showed – re-checked
 // against the database as it is at that moment.
 
-export type ImportOptions = { overwriteStock: boolean };
+export type ImportOptions = { overwriteStock: boolean; hideNewProducts?: boolean };
 
 export type ImportReport = {
   ok: true;
@@ -59,7 +59,7 @@ export async function runCatalogImport(
 
 type Prepared = { ok: true; plan: ImportPlan; ignoredColumns: string[] };
 
-async function prepare(file: Blob, { overwriteStock }: ImportOptions, repository: CatalogRepository) {
+async function prepare(file: Blob, { overwriteStock, hideNewProducts }: ImportOptions, repository: CatalogRepository) {
   let sheet;
   try {
     sheet = await readFirstSheet(file);
@@ -71,7 +71,7 @@ async function prepare(file: Blob, { overwriteStock }: ImportOptions, repository
   if (!parsed.ok) return parsed;
 
   const context = await loadContext(parsed.rows, repository);
-  const plan = planImport(parsed, context, { overwriteStock, newId: () => crypto.randomUUID(), now: new Date().toISOString() });
+  const plan = planImport(parsed, context, { overwriteStock, hideNewProducts, newId: () => crypto.randomUUID(), now: new Date().toISOString() });
   return { ok: true as const, plan, ignoredColumns: parsed.ignoredColumns } satisfies Prepared;
 }
 

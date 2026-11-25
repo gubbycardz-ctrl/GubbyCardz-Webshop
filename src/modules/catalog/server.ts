@@ -4,6 +4,7 @@ import "server-only";
 export { createFirestoreCatalogRepository } from "./firestore-catalog-repository";
 export { getCatalogRepository } from "./default-repository";
 export { previewCatalogImport, runCatalogImport, type ImportOutcome } from "./catalog-import";
+export { getSellableOffers } from "./shop-offers";
 export { prepareStockChange, type StockItem, type StockShortage } from "./firestore-stock";
 export {
   CATALOG_CACHE_TAG,

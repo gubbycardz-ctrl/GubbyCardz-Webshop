@@ -18,9 +18,13 @@ export interface CatalogRepository {
   saveProduct(product: Product): Promise<void>;
   getProductBySlug(slug: string): Promise<Product | null>;
   getProductById(id: string): Promise<Product | null>;
-  /** Filter by game or by kind (e.g. all accessories, with or without game), sorted by name. */
-  listProducts(query: { gameId?: string; kind?: ProductKind; limit?: number }): Promise<Product[]>;
-  /** Most recently created first; products without `createdAt` are left out. */
+  /**
+   * Filter by game or by kind (e.g. all accessories, with or without game), sorted by name.
+   * Hidden products are left out unless `includeHidden` is set (admin pages only) – so a
+   * caller that forgets about visibility errs on the safe side.
+   */
+  listProducts(query: { gameId?: string; kind?: ProductKind; limit?: number; includeHidden?: boolean }): Promise<Product[]>;
+  /** Most recently created first; products without `createdAt` and hidden products are left out. */
   listNewestProducts(limit: number): Promise<Product[]>;
 
   /**

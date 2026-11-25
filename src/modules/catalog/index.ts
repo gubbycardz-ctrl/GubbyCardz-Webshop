@@ -7,7 +7,7 @@ export {
   type CatalogRepository,
 } from "./catalog-repository";
 export { gameSchema, cardSetSchema, slugSchema, type Game, type CardSet } from "./game";
-export { productSchema, type Product, type ProductKind } from "./product";
+export { isShopVisible, productSchema, type Product, type ProductKind } from "./product";
 export { offerSchema, isOfferTypeAllowedFor, type Offer, type OfferType } from "./offer";
 export {
   offerInternalsSchema,

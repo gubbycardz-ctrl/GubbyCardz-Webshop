@@ -23,6 +23,7 @@ export const FIELD_LABELS: Record<string, string> = {
   code: "Set-Code",
   releaseDate: "Erscheinungsdatum",
   kind: "Produktart",
+  hidden: "Sichtbarkeit",
   collectorNumber: "Nummer",
   rarity: "Seltenheit",
   type: "Angebotsart",
@@ -78,6 +79,9 @@ export function parseProductForm(
     gameId: optionalText(fields.gameId),
     setId: optionalText(fields.setId),
     createdAt,
+    // A ticked checkbox sends a value, an unticked one nothing: forms that do not know the
+    // field keep creating visible products, as before.
+    ...(text(fields.hidden) && { hidden: true }),
   };
 
   const slug = productSlug({ kind, name, collectorNumber });

@@ -9,7 +9,7 @@ import {
 import { cardSetSchema, gameSchema, type CardSet } from "./game";
 import { isOfferTypeAllowedFor, offerSchema, type Offer } from "./offer";
 import { offerInternalsSchema, type OfferInternals } from "./offer-internals";
-import { productSchema, type Product } from "./product";
+import { isShopVisible, productSchema, type Product } from "./product";
 
 export const CATALOG_COLLECTIONS = {
   games: "games",
@@ -23,6 +23,9 @@ export const CATALOG_COLLECTIONS = {
 // Upper bounds for lists that are not paginated, so a list can never grow unbounded.
 const MAX_GAMES = 50;
 const MAX_CARD_SETS_PER_GAME = 500;
+// Hidden products cannot be filtered in the query ("absent = visible" has no Firestore equivalent),
+// so lists read on until enough visible ones are found – at most this many pages of MAX_PAGE_SIZE.
+const MAX_SCAN_PAGES = 5;
 // Firestore allows at most 30 values in an "in" filter.
 const MAX_IN_FILTER_VALUES = 30;
 
@@ -77,24 +80,16 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
       return doc.exists ? productSchema.parse(doc.data()) : null;
     },
 
-    async listProducts({ gameId, kind, limit = DEFAULT_PAGE_SIZE }) {
+    async listProducts({ gameId, kind, limit = DEFAULT_PAGE_SIZE, includeHidden = false }) {
       let query: Query = products;
       if (gameId) query = query.where("gameId", "==", gameId);
       if (kind) query = query.where("kind", "==", kind);
-      const snapshot = await query
-        .orderBy("name")
-        .limit(Math.min(limit, MAX_PAGE_SIZE))
-        .get();
-      return snapshot.docs.map((doc) => productSchema.parse(doc.data()));
+      return readProducts(query.orderBy("name"), Math.min(limit, MAX_PAGE_SIZE), includeHidden);
     },
 
     async listNewestProducts(limit) {
       // Single-field ordering: covered by Firestore's automatic index, no composite index needed.
-      const snapshot = await products
-        .orderBy("createdAt", "desc")
-        .limit(Math.min(limit, MAX_PAGE_SIZE))
-        .get();
-      return snapshot.docs.map((doc) => productSchema.parse(doc.data()));
+      return readProducts(products.orderBy("createdAt", "desc"), Math.min(limit, MAX_PAGE_SIZE), false);
     },
 
     async saveOffer(offer, internals) {
@@ -210,6 +205,24 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
       await db.batch().delete(offers.doc(id)).delete(offerInternals.doc(id)).commit();
     },
   };
+
+  /** Reads an ordered query page by page until `wanted` products qualify (see MAX_SCAN_PAGES). */
+  async function readProducts(ordered: Query, wanted: number, includeHidden: boolean): Promise<Product[]> {
+    // Nothing is skipped when hidden products are wanted, so no more than needed is read.
+    const pageSize = includeHidden ? wanted : MAX_PAGE_SIZE;
+    const found: Product[] = [];
+    let cursor: DocumentSnapshot | undefined;
+    for (let page = 0; page < MAX_SCAN_PAGES && found.length < wanted; page++) {
+      const snapshot = await (cursor ? ordered.startAfter(cursor) : ordered).limit(pageSize).get();
+      for (const doc of snapshot.docs) {
+        const product = productSchema.parse(doc.data());
+        if (found.length < wanted && (includeHidden || isShopVisible(product))) found.push(product);
+      }
+      if (snapshot.size < pageSize) break;
+      cursor = snapshot.docs.at(-1);
+    }
+    return found;
+  }
 
   async function assertSlugIsFree(transaction: Transaction, product: Product) {
     const sameSlug = await transaction.get(products.where("slug", "==", product.slug).limit(2));

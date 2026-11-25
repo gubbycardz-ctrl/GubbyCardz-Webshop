@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { requireAdmin } from "@/modules/auth/server";
-import { describeProductKind, type Product } from "@/modules/catalog";
+import { MAX_PAGE_SIZE, describeProductKind, type Product } from "@/modules/catalog";
 import { getCatalogRepository } from "@/modules/catalog/server";
 import { ProductForm } from "../_components/product-form";
 
@@ -28,8 +28,8 @@ async function Products({ searchParams }: Pick<PageProps<"/admin/produkte">, "se
 
   const [products, sets] = await Promise.all([
     selected === ACCESSORIES_FILTER
-      ? repository.listProducts({ kind: "accessory" })
-      : repository.listProducts({ gameId: selected }),
+      ? repository.listProducts({ kind: "accessory", limit: MAX_PAGE_SIZE, includeHidden: true })
+      : repository.listProducts({ gameId: selected, limit: MAX_PAGE_SIZE, includeHidden: true }),
     Promise.all(games.map((game) => repository.listCardSets(game.id))).then((lists) => lists.flat()),
   ]);
 
@@ -80,6 +80,7 @@ function ProductList({ products }: { products: Product[] }) {
             <span>
               {product.name}
               {product.kind === "single" && <span className="text-foreground/60"> · {product.collectorNumber}</span>}
+              {product.hidden && <span className="ml-2 rounded-full bg-foreground/10 px-2 py-0.5 text-xs">Unsichtbar</span>}
             </span>
             <span className="text-sm text-foreground/60">
               {describeProductKind(product)}

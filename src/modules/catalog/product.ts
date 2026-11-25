@@ -12,6 +12,9 @@ const productBase = z.object({
   // Optional because products created before this field existed have none;
   // those simply do not show up under "new".
   createdAt: z.iso.datetime().optional(),
+  // A hidden product (a draft) stays in the catalog and in the admin area, but the shop neither
+  // shows nor sells it. Optional and "absent = visible", so all existing products stay public.
+  hidden: z.boolean().optional(),
 });
 
 const singleCardSchema = productBase.extend({
@@ -46,6 +49,11 @@ export const productSchema = z.discriminatedUnion("kind", [
 
 export type Product = z.infer<typeof productSchema>;
 export type ProductKind = Product["kind"];
+
+/** Whether customers may see and buy the product. Every shop read goes through this. */
+export function isShopVisible(product: Product) {
+  return product.hidden !== true;
+}
 
 /** Singles get their number into the URL, because many cards share a name. */
 export function productSlug({ kind, name, collectorNumber }: { kind: ProductKind; name: string; collectorNumber?: string }) {
