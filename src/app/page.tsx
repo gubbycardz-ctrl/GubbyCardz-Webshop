@@ -48,7 +48,7 @@ export default function Home() {
             width={800}
             height={350}
             priority
-            className="order-first h-auto w-full max-w-md justify-self-center md:order-none"
+            className="float order-first h-auto w-full max-w-md justify-self-center drop-shadow-[0_10px_30px_rgba(0,149,255,0.35)] md:order-none"
           />
         </div>
       </section>
