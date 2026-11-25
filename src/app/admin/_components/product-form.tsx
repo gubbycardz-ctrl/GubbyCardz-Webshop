@@ -1,7 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { PRODUCT_KIND_LABELS, SEALED_CATEGORIES, type CardSet, type Game, type Product, type ProductKind } from "@/modules/catalog";
+import {
+  PRODUCT_KIND_LABELS,
+  SEALED_CATEGORIES,
+  describeCardSet,
+  groupSetsByEra,
+  type CardSet,
+  type Game,
+  type Product,
+  type ProductKind,
+} from "@/modules/catalog";
 import { createProduct, updateProduct } from "../catalog-actions";
 import { Field, FormMessage, SubmitButton, inputClass, useAdminForm } from "./form-kit";
 import { OfferFields } from "./offer-forms";
@@ -75,11 +84,15 @@ export function ProductForm({
             defaultValue={product && "setId" in product ? product.setId : undefined}
           >
             {kind === "sealed" && <option value="">– kein bestimmtes Set –</option>}
-            {setsOfGame.map((set) => (
-              <option key={set.id} value={set.id}>
-                {set.name} ({set.code})
-              </option>
-            ))}
+            {groupSetsByEra(setsOfGame).map((group) =>
+              group.era ? (
+                <optgroup key={group.era} label={group.era}>
+                  {group.sets.map(setOption)}
+                </optgroup>
+              ) : (
+                group.sets.map(setOption)
+              ),
+            )}
           </select>
         </Field>
       )}
@@ -138,6 +151,14 @@ export function ProductForm({
         </p>
       )}
     </form>
+  );
+}
+
+function setOption(set: CardSet) {
+  return (
+    <option key={set.id} value={set.id}>
+      {describeCardSet(set)}
+    </option>
   );
 }
 

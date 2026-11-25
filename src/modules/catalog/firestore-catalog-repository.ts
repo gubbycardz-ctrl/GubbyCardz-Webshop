@@ -1,5 +1,6 @@
 import type { CollectionReference, DocumentData, DocumentSnapshot, Firestore, Query, Transaction } from "firebase-admin/firestore";
 import { chunks } from "@/shared/chunks";
+import { mapWithLimit } from "@/shared/concurrency";
 import {
   CatalogError,
   DEFAULT_PAGE_SIZE,
@@ -157,6 +158,17 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
           .flatMap((snapshot) => snapshot.docs)
           .map((doc) => [String(doc.get("sku")), { offerId: doc.id, internals: offerInternalsSchema.parse(doc.data()) }]),
       );
+    },
+
+    async countProductsBySet(setIds) {
+      const uniqueIds = [...new Set(setIds)];
+      if (uniqueIds.length > MAX_PAGE_SIZE) throw new CatalogError(`Höchstens ${MAX_PAGE_SIZE} Einträge auf einmal`);
+      // A count query reads one index entry per product, so this stays cheap even for many sets.
+      const counts = await mapWithLimit(uniqueIds, 10, async (id) => {
+        const snapshot = await products.where("setId", "==", id).count().get();
+        return [id, snapshot.data().count] as const;
+      });
+      return new Map(counts);
     },
 
     async getProductsByIds(ids) {

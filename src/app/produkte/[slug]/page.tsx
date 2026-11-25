@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { describeOffer, describeProductKind, type Product } from "@/modules/catalog";
+import { describeOffer, describeProductKind, displaySetName, type Product } from "@/modules/catalog";
 import { getAvailableOffers, getCardSet, getGame, getProduct } from "@/modules/catalog/server";
 import { formatEuro } from "@/shared/money";
 import { PriceNote } from "@/app/price-note";
@@ -60,7 +60,7 @@ async function ProductDetails({ params }: Pick<PageProps<"/produkte/[slug]">, "p
               <>
                 <dt className="text-foreground/60">Set</dt>
                 <dd>
-                  {cardSet.name} ({cardSet.code})
+                  {displaySetName(cardSet)} ({cardSet.code})
                 </dd>
               </>
             )}

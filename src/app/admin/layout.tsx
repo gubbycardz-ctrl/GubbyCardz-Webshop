@@ -37,6 +37,9 @@ async function AdminBar() {
         <Link href="/admin/bestellungen" className="hover:text-brand-blue">
           Bestellungen
         </Link>
+        <Link href="/admin/tcg-katalog" className="hover:text-brand-blue">
+          TCG-Katalog
+        </Link>
         <Link href="/admin/import" className="hover:text-brand-blue">
           Import
         </Link>
