@@ -28,6 +28,11 @@ export interface CatalogRepository {
    * another offer already uses the SKU. Internals are left unchanged when omitted.
    */
   saveOffer(offer: Offer, internals?: OfferInternals): Promise<void>;
+  /**
+   * Creates a product together with its first offer, all or nothing: fails for the
+   * same reasons as saveProduct and saveOffer, and then writes neither.
+   */
+  saveProductWithOffer(product: Product, offer: Offer, internals?: OfferInternals): Promise<void>;
   /** Sorted by price, cheapest first. */
   listOffers(productId: string): Promise<Offer[]>;
 

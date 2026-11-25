@@ -262,6 +262,39 @@ describe("offers", () => {
   });
 });
 
+describe("product with its first offer", () => {
+  const internals: OfferInternals = { sku: "PKM-199-DE", purchasePriceCents: 2500, origin: "private" };
+
+  it("saves product, offer and internals together", async () => {
+    await repository.saveProductWithOffer(charizard, nearMintOffer, internals);
+
+    expect(await repository.getProductById(charizard.id)).toEqual(charizard);
+    expect(await repository.listOffers(charizard.id)).toEqual([nearMintOffer]);
+    expect((await repository.getOfferInternals([nearMintOffer.id])).get(nearMintOffer.id)).toMatchObject(internals);
+  });
+
+  it("writes nothing when the SKU is already taken", async () => {
+    await repository.saveProductWithOffer(display, { id: "o-display", productId: display.id, type: "sealed", language: "ja", priceCents: 12999, stock: 1 }, internals);
+
+    await expect(repository.saveProductWithOffer(charizard, nearMintOffer, internals)).rejects.toThrow(CatalogError);
+    expect(await repository.getProductById(charizard.id)).toBeNull();
+    expect(await repository.listOffers(charizard.id)).toEqual([]);
+  });
+
+  it("writes nothing when the slug is already taken", async () => {
+    await repository.saveProduct({ ...charizard, id: "p-other" });
+
+    await expect(repository.saveProductWithOffer(charizard, nearMintOffer)).rejects.toThrow(CatalogError);
+    expect(await repository.listOffers(charizard.id)).toEqual([]);
+  });
+
+  it("rejects an offer that does not fit the product or belongs to another one", async () => {
+    await expect(repository.saveProductWithOffer(display, { ...nearMintOffer, productId: display.id })).rejects.toThrow(CatalogError);
+    await expect(repository.saveProductWithOffer(display, nearMintOffer)).rejects.toThrow(CatalogError);
+    expect(await repository.getProductById(display.id)).toBeNull();
+  });
+});
+
 describe("deleting", () => {
   beforeEach(async () => {
     await repository.saveGame({ id: "pokemon", name: "Pokémon" });
