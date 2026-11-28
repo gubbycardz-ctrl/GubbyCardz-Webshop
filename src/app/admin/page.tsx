@@ -3,11 +3,11 @@ import { requireAdmin } from "@/modules/auth/server";
 import { getCatalogRepository } from "@/modules/catalog/server";
 import { deleteCardSet, deleteGame } from "./catalog-actions";
 import { DeleteButton } from "./_components/delete-button";
-import { CardSetForm, GameForm } from "./_components/game-forms";
+import { CardSetForm, GameForm, GameRenameForm } from "./_components/game-forms";
 
 export default function AdminPage() {
   return (
-    <Suspense fallback={<p className="text-foreground/60">Wird geladen …</p>}>
+    <Suspense fallback={<p className="text-foreground/60">Loading …</p>}>
       <GamesAndSets />
     </Suspense>
   );
@@ -22,9 +22,9 @@ async function GamesAndSets() {
   return (
     <div className="flex flex-col gap-10">
       <section>
-        <h1 className="text-3xl font-bold">Spiele & Sets</h1>
+        <h1 className="text-3xl font-bold">TCGs & Sets</h1>
         {games.length === 0 ? (
-          <p className="mt-4 text-foreground/60">Noch keine Spiele. Legt zuerst ein Spiel an, z. B. „Pokémon“.</p>
+          <p className="mt-4 text-foreground/60">No TCGs yet. Add one first, e.g. “Pokémon”.</p>
         ) : (
           <ul className="mt-4 grid gap-4 sm:grid-cols-2">
             {games.map((game, index) => (
@@ -33,12 +33,13 @@ async function GamesAndSets() {
                   <h2 className="font-semibold">{game.name}</h2>
                   <DeleteButton
                     action={deleteGame.bind(null, game.id)}
-                    confirmMessage={`Spiel „${game.name}“ wirklich löschen?`}
-                    label="Spiel löschen"
+                    confirmMessage={`Really delete the TCG “${game.name}”?`}
+                    label="Delete TCG"
                   />
                 </div>
+                <GameRenameForm game={game} />
                 {setsPerGame[index].length === 0 ? (
-                  <p className="mt-2 text-sm text-foreground/60">Noch keine Sets.</p>
+                  <p className="mt-2 text-sm text-foreground/60">No sets yet.</p>
                 ) : (
                   <ul className="mt-2 text-sm text-foreground/70">
                     {setsPerGame[index].map((set) => (
@@ -48,7 +49,7 @@ async function GamesAndSets() {
                         </span>
                         <DeleteButton
                           action={deleteCardSet.bind(null, set.id)}
-                          confirmMessage={`Set „${set.name}“ wirklich löschen?`}
+                          confirmMessage={`Really delete the set “${set.name}”?`}
                         />
                       </li>
                     ))}
@@ -61,7 +62,7 @@ async function GamesAndSets() {
       </section>
 
       <section>
-        <h2 className="text-xl font-semibold">Neues Spiel</h2>
+        <h2 className="text-xl font-semibold">New TCG</h2>
         <div className="mt-3">
           <GameForm />
         </div>
@@ -69,7 +70,7 @@ async function GamesAndSets() {
 
       {games.length > 0 && (
         <section>
-          <h2 className="text-xl font-semibold">Neues Set</h2>
+          <h2 className="text-xl font-semibold">New set</h2>
           <div className="mt-3">
             <CardSetForm games={games} />
           </div>
@@ -80,5 +81,5 @@ async function GamesAndSets() {
 }
 
 function formatDate(isoDate: string) {
-  return new Date(`${isoDate}T00:00:00`).toLocaleDateString("de-DE");
+  return new Date(`${isoDate}T00:00:00`).toLocaleDateString("en-GB");
 }

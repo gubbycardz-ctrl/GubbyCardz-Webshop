@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   parseCardSetForm,
+  parseCardSetEditForm,
+  parseGameEditForm,
   parseGameForm,
   parseNewProductForm,
   parseOfferForm,
@@ -9,6 +11,7 @@ import {
   parseProductForm,
   parseProductUpdateForm,
 } from "./admin-forms";
+import type { CardSet } from "./game";
 import type { Offer } from "./offer";
 import type { Product } from "./product";
 
@@ -17,8 +20,8 @@ describe("parseGameForm", () => {
     expect(parseGameForm({ name: " Pokémon " })).toEqual({ ok: true, value: { id: "pokemon", name: "Pokémon" } });
   });
 
-  it("reports a missing name once, in plain German", () => {
-    expect(parseGameForm({ name: "" })).toEqual({ ok: false, error: "Name: bitte ausfüllen" });
+  it("reports a missing name once, in plain English", () => {
+    expect(parseGameForm({ name: "" })).toEqual({ ok: false, error: "Name: required" });
   });
 });
 
@@ -52,7 +55,7 @@ describe("parseProductForm", () => {
   it("requires set, number and rarity for single cards", () => {
     expect(parseProductForm({ kind: "single", name: "Glurak ex", gameId: "pokemon" }, { id: "p1", createdAt })).toEqual({
       ok: false,
-      error: "Set: bitte ausfüllen · Nummer: bitte ausfüllen · Seltenheit: bitte ausfüllen",
+      error: "Set: required · Number: required · Rarity: required",
     });
   });
 
@@ -75,7 +78,7 @@ describe("parseProductForm", () => {
   it("requires a known category for new sealed products", () => {
     expect(parseProductForm({ kind: "sealed", name: "Display OP-05", gameId: "one-piece" }, { id: "p5" })).toEqual({
       ok: false,
-      error: "Kategorie: bitte ausfüllen",
+      error: "Category: required",
     });
     expect(parseProductForm({ kind: "sealed", category: "mystery", name: "Display OP-05", gameId: "one-piece" }, { id: "p5" }).ok).toBe(false);
   });
@@ -118,7 +121,7 @@ describe("parseProductUpdateForm", () => {
   it("asks for a category when editing a sealed product created before categories existed", () => {
     const legacyDisplay: Product = { id: "p3", kind: "sealed", name: "Display OP-05", slug: "display-op-05", gameId: "one-piece" };
     const fields = { name: "Display OP-05", gameId: "one-piece", setId: "" };
-    expect(parseProductUpdateForm(fields, legacyDisplay)).toEqual({ ok: false, error: "Kategorie: bitte ausfüllen" });
+    expect(parseProductUpdateForm(fields, legacyDisplay)).toEqual({ ok: false, error: "Category: required" });
     expect(parseProductUpdateForm({ ...fields, category: "display" }, legacyDisplay)).toEqual({
       ok: true,
       value: { ...legacyDisplay, category: "display" },
@@ -153,12 +156,12 @@ describe("parseNewProductForm", () => {
 
   it("reports problems of product and offer together", () => {
     const result = parseNewProductForm({ ...sleeves, ...firstOffer, name: "", stock: "", origin: "" }, ids);
-    expect(result).toEqual({ ok: false, error: "Name: bitte ausfüllen · Bestand: bitte ausfüllen · Herkunft: bitte ausfüllen" });
+    expect(result).toEqual({ ok: false, error: "Name: required · Stock: required · Origin: required" });
   });
 
   it("rejects an offer type that does not fit the product kind", () => {
     const result = parseNewProductForm({ ...sleeves, ...firstOffer, type: "sealed", language: "de" }, ids);
-    expect(result).toEqual({ ok: false, error: "Angebotsart: passt nicht zur Produktart" });
+    expect(result).toEqual({ ok: false, error: "Offer type: does not fit the product type" });
   });
 });
 
@@ -178,7 +181,7 @@ describe("parseOfferForm", () => {
 
   it("rejects prices that are not clear euro amounts", () => {
     const result = parseOfferForm({ type: "accessory", price: "39,999", stock: "1", taxScheme: "standard" }, ids);
-    expect(result).toEqual({ ok: false, error: "Preis: bitte als Euro-Betrag eingeben, z. B. 39,99" });
+    expect(result).toEqual({ ok: false, error: "Price: enter a euro amount, e.g. 39.99" });
   });
 
   it("rejects fractional or missing stock", () => {
@@ -189,7 +192,7 @@ describe("parseOfferForm", () => {
   it("requires a known tax scheme", () => {
     expect(parseOfferForm({ type: "accessory", price: "8,99", stock: "1", taxScheme: "" }, ids)).toEqual({
       ok: false,
-      error: "Steuerart: bitte ausfüllen",
+      error: "Tax scheme: required",
     });
     expect(parseOfferForm({ type: "accessory", price: "8,99", stock: "1", taxScheme: "zero" }, ids).ok).toBe(false);
   });
@@ -207,7 +210,7 @@ describe("parseOfferUpdateForm", () => {
 
   it("asks for the tax scheme when editing an offer created before it existed", () => {
     const legacyOffer: Offer = { ...offer, taxScheme: undefined };
-    expect(parseOfferUpdateForm({ price: "34,50", stock: "2" }, legacyOffer)).toEqual({ ok: false, error: "Steuerart: bitte ausfüllen" });
+    expect(parseOfferUpdateForm({ price: "34,50", stock: "2" }, legacyOffer)).toEqual({ ok: false, error: "Tax scheme: required" });
   });
 });
 
@@ -231,14 +234,14 @@ describe("parseOfferInternalsForm", () => {
   it("requires EK and origin, because the margin scheme needs them per item", () => {
     expect(parseOfferInternalsForm({ purchasePrice: " ", origin: "" })).toEqual({
       ok: false,
-      error: "EK: bitte ausfüllen · Herkunft: bitte ausfüllen",
+      error: "Purchase price: required · Origin: required",
     });
   });
 
   it("rejects unclear EK amounts and SKUs with spaces", () => {
     expect(parseOfferInternalsForm({ purchasePrice: "24,555", origin: "private" })).toEqual({
       ok: false,
-      error: "EK: bitte als Euro-Betrag eingeben, z. B. 24,50",
+      error: "Purchase price: enter a euro amount, e.g. 24.50",
     });
     expect(parseOfferInternalsForm({ sku: "PKM 199", purchasePrice: "1", origin: "private" })).toEqual({
       ok: false,
@@ -261,5 +264,53 @@ describe("parseProductForm – visibility", () => {
     const hidden: Product = { id: "p1", kind: "accessory", name: "Sleeves schwarz", slug: "sleeves-schwarz", hidden: true };
     const result = parseProductUpdateForm({ name: "Sleeves schwarz" }, hidden);
     expect(result.ok && result.value).not.toHaveProperty("hidden");
+  });
+});
+
+describe("parseGameEditForm", () => {
+  it("renames a TCG and keeps its id", () => {
+    expect(parseGameEditForm({ name: "  Pokémon " }, { id: "pokemon", name: "pokemon" })).toEqual({ ok: true, value: { id: "pokemon", name: "Pokémon" } });
+  });
+
+  it("does not accept an empty name", () => {
+    expect(parseGameEditForm({ name: "" }, { id: "pokemon", name: "pokemon" })).toEqual({ ok: false, error: "Name: required" });
+  });
+});
+
+describe("parseCardSetEditForm", () => {
+  const synced: CardSet = {
+    id: "pokemon-sv08-5",
+    gameId: "pokemon",
+    name: "Prismatic Evolutions",
+    code: "PRE",
+    releaseDate: "2025-01-17",
+    nameEn: "Prismatic Evolutions",
+    nameDe: "Prismatische Entwicklungen",
+    era: "Scarlet & Violet",
+    setType: "special",
+    region: "international",
+    status: "released",
+    source: "tcgdex",
+    sourceId: "tcgdex:en/sv08.5",
+    verifiedAt: "2026-11-25",
+  };
+  const fields = { name: "Prismatic Evolutions", code: "PRE", releaseDate: "2025-01-17", nameEn: "Prismatic Evolutions", nameDe: "Prismatische Evolution", era: "Scarlet & Violet", setType: "special", status: "released" };
+
+  it("takes the corrected values and takes the set over from the source, so the sync no longer overwrites it", () => {
+    const result = parseCardSetEditForm(fields, synced);
+    expect(result).toMatchObject({ ok: true, value: { id: "pokemon-sv08-5", nameDe: "Prismatische Evolution", sourceId: "tcgdex:en/sv08.5", region: "international" } });
+    expect(result.ok && result.value).not.toHaveProperty("source");
+  });
+
+  it("removes fields that were emptied", () => {
+    const result = parseCardSetEditForm({ ...fields, nameDe: "", setType: "", era: "" }, synced);
+    expect(result.ok && result.value).not.toHaveProperty("nameDe");
+    expect(result.ok && result.value).not.toHaveProperty("setType");
+    expect(result.ok && result.value).not.toHaveProperty("era");
+  });
+
+  it("rejects a missing name or code and an unknown type, in plain English", () => {
+    expect(parseCardSetEditForm({ ...fields, name: "", code: "" }, synced)).toEqual({ ok: false, error: "Name: required · Set code: required" });
+    expect(parseCardSetEditForm({ ...fields, setType: "huge" }, synced).ok).toBe(false);
   });
 });

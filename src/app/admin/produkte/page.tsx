@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { requireAdmin } from "@/modules/auth/server";
-import { MAX_PAGE_SIZE, describeProductKind, type Product } from "@/modules/catalog";
+import { MAX_PAGE_SIZE, describeProductKindAdmin, type Product } from "@/modules/catalog";
 import { getCatalogRepository } from "@/modules/catalog/server";
 import { ProductForm } from "../_components/product-form";
 
@@ -13,7 +13,7 @@ const ACCESSORIES_FILTER = "zubehoer";
 
 export default function AdminProductsPage({ searchParams }: PageProps<"/admin/produkte">) {
   return (
-    <Suspense fallback={<p className="text-foreground/60">Wird geladen …</p>}>
+    <Suspense fallback={<p className="text-foreground/60">Loading …</p>}>
       <Products searchParams={searchParams} />
     </Suspense>
   );
@@ -33,12 +33,12 @@ async function Products({ searchParams }: Pick<PageProps<"/admin/produkte">, "se
     Promise.all(games.map((game) => repository.listCardSets(game.id))).then((lists) => lists.flat()),
   ]);
 
-  const tabs = [...games.map((game) => ({ id: game.id, name: game.name })), { id: ACCESSORIES_FILTER, name: "Zubehör" }];
+  const tabs = [...games.map((game) => ({ id: game.id, name: game.name })), { id: ACCESSORIES_FILTER, name: "Accessories" }];
 
   return (
     <div className="flex flex-col gap-10">
       <section>
-        <h1 className="text-3xl font-bold">Produkte</h1>
+        <h1 className="text-3xl font-bold">Products</h1>
         <nav className="mt-4 flex flex-wrap gap-2 text-sm">
           {tabs.map((tab) => (
             <Link
@@ -54,11 +54,11 @@ async function Products({ searchParams }: Pick<PageProps<"/admin/produkte">, "se
       </section>
 
       <section>
-        <h2 className="text-xl font-semibold">Neues Produkt</h2>
+        <h2 className="text-xl font-semibold">New product</h2>
         <div className="mt-3">
           {games.length === 0 ? (
             <p className="text-foreground/60">
-              Bitte zuerst unter <Link href="/admin" className="text-brand-blue hover:underline">Spiele & Sets</Link> ein Spiel anlegen.
+              Please add a TCG first under <Link href="/admin" className="text-brand-blue hover:underline">TCGs & Sets</Link>, or load them in <Link href="/admin/tcg-katalog" className="text-brand-blue hover:underline">TCG Catalog</Link>.
             </p>
           ) : (
             <ProductForm games={games} sets={sets} defaultGameId={selected === ACCESSORIES_FILTER ? undefined : selected} />
@@ -70,7 +70,7 @@ async function Products({ searchParams }: Pick<PageProps<"/admin/produkte">, "se
 }
 
 function ProductList({ products }: { products: Product[] }) {
-  if (products.length === 0) return <p className="mt-4 text-foreground/60">Noch keine Produkte.</p>;
+  if (products.length === 0) return <p className="mt-4 text-foreground/60">No products yet.</p>;
 
   return (
     <ul className="mt-4 divide-y divide-foreground/10 rounded-xl border border-foreground/10">
@@ -80,11 +80,11 @@ function ProductList({ products }: { products: Product[] }) {
             <span>
               {product.name}
               {product.kind === "single" && <span className="text-foreground/60"> · {product.collectorNumber}</span>}
-              {product.hidden && <span className="ml-2 rounded-full bg-foreground/10 px-2 py-0.5 text-xs">Unsichtbar</span>}
+              {product.hidden && <span className="ml-2 rounded-full bg-foreground/10 px-2 py-0.5 text-xs">Hidden</span>}
             </span>
             <span className="text-sm text-foreground/60">
-              {describeProductKind(product)}
-              {product.kind === "sealed" && !product.category && <span className="text-brand-red"> · Kategorie fehlt</span>}
+              {describeProductKindAdmin(product)}
+              {product.kind === "sealed" && !product.category && <span className="text-brand-red"> · Category missing</span>}
             </span>
           </Link>
         </li>

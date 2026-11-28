@@ -7,7 +7,7 @@ import { getPricedCart } from "@/modules/cart/server";
 import { maxOrderValueMessage } from "@/modules/orders";
 import { exceedsMaxOrderValue } from "@/modules/shipping";
 import { formatEuro } from "@/shared/money";
-import { PriceNote } from "@/app/price-note";
+import { PriceNote } from "@/app/(shop)/price-note";
 import { changeQuantity, removeFromCart } from "./actions";
 
 export const metadata: Metadata = {

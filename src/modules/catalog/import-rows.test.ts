@@ -82,13 +82,13 @@ describe("parseImportSheet", () => {
         sku: "OP-1",
         name: "Nami",
         messages: [
-          "VK: bitte ausfüllen",
-          "Bestand: „zwei“ ist keine ganze Zahl",
-          "EK: „30.975“ ist kein Euro-Betrag",
-          "Steuerart: „Steuerfrei“ ist unbekannt",
-          "Sprache: „Klingonisch“ ist unbekannt",
-          "Nummer: bitte ausfüllen",
-          "Zertifikat: bitte ausfüllen (gegradete Karte)",
+          "VK: required",
+          "Bestand: \"zwei\" is not a whole number",
+          "EK: \"30.975\" is not a euro amount",
+          "Steuerart: \"Steuerfrei\" is not recognized",
+          "Sprache: \"Klingonisch\" is not recognized",
+          "Nummer: required",
+          "Zertifikat: required (graded card)",
         ],
       },
     ]);
@@ -103,7 +103,7 @@ describe("parseImportSheet", () => {
 
   it("rejects sealed rows with a card condition", () => {
     const { errors } = parse(sheet(["S", "X", "Pokémon", "", "Tin", "Englisch", "PSA 10", n("1"), n("1"), n("2")]));
-    expect(errors[0].messages).toEqual(["Zustand: „PSA 10“ passt nicht zu Sealed-Ware (leer lassen oder „Neu/Sealed“)"]);
+    expect(errors[0].messages).toEqual(["Zustand: \"PSA 10\" does not apply to sealed products (leave it empty or use \"Neu/Sealed\")"]);
   });
 
   it("matches column titles loosely, ignores unknown ones and skips empty rows", () => {
@@ -116,8 +116,8 @@ describe("parseImportSheet", () => {
   });
 
   it("refuses sheets without the key columns or with too many rows", () => {
-    expect(parseImportSheet([["SKU", "Name"]])).toEqual({ ok: false, error: "Spalten fehlen in der ersten Zeile: Kategorie, VK" });
-    expect(parseImportSheet([HEADER])).toEqual({ ok: false, error: "Die Datei enthält keine Artikel." });
+    expect(parseImportSheet([["SKU", "Name"]])).toEqual({ ok: false, error: "Columns missing in the first row: Kategorie, VK" });
+    expect(parseImportSheet([HEADER])).toEqual({ ok: false, error: "The file contains no items." });
     const tooMany = Array.from({ length: MAX_IMPORT_ROWS + 1 }, (_, index) => [`S-${index}`]);
     expect(parseImportSheet([HEADER, ...tooMany])).toMatchObject({ ok: false });
   });

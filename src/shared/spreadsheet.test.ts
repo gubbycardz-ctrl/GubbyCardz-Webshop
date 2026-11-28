@@ -13,8 +13,8 @@ describe("readFirstSheet", () => {
     expect(rows).toHaveLength(4);
   });
 
-  it("rejects files that are not .xlsx with a German message", async () => {
+  it("rejects files that are not .xlsx with a clear message", async () => {
     await expect(readFirstSheet(new Blob(["SKU;Name\n1;Test"]))).rejects.toThrow(SpreadsheetError);
-    await expect(readFirstSheet(new Blob(["SKU;Name\n1;Test"]))).rejects.toThrow("keine lesbare Excel-Datei");
+    await expect(readFirstSheet(new Blob(["SKU;Name\n1;Test"]))).rejects.toThrow("not a readable Excel file");
   });
 });

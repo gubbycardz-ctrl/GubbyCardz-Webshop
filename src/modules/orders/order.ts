@@ -9,10 +9,10 @@ export const ORDER_STATUSES = ["awaiting-payment", "paid", "shipped", "cancelled
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  "awaiting-payment": "Wartet auf Zahlung",
-  paid: "Bezahlt – zu packen",
-  shipped: "Versendet",
-  cancelled: "Storniert",
+  "awaiting-payment": "Awaiting payment",
+  paid: "Paid – ready to pack",
+  shipped: "Shipped",
+  cancelled: "Cancelled",
 };
 
 const cents = z.int().nonnegative();

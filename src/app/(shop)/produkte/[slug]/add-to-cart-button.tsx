@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { addToCart, type AddToCartState } from "@/app/warenkorb/actions";
+import { addToCart, type AddToCartState } from "@/app/(shop)/warenkorb/actions";
 
 export function AddToCartButton({ offerId }: { offerId: string }) {
   const [state, setState] = useState<AddToCartState>({});

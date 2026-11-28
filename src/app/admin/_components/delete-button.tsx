@@ -7,7 +7,7 @@ import type { FormState } from "../catalog-actions";
 export function DeleteButton({
   action,
   confirmMessage,
-  label = "Löschen",
+  label = "Delete",
 }: {
   action: () => Promise<FormState>;
   confirmMessage: string;
@@ -30,7 +30,7 @@ export function DeleteButton({
         disabled={pending}
         className="text-sm text-brand-red hover:underline disabled:opacity-50"
       >
-        {pending ? "Wird gelöscht …" : label}
+        {pending ? "Deleting …" : label}
       </button>
       {error && (
         <span role="alert" className="max-w-xs text-xs text-brand-red">

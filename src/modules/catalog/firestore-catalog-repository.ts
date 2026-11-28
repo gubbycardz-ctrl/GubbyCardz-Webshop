@@ -1,5 +1,6 @@
 import type { CollectionReference, DocumentData, DocumentSnapshot, Firestore, Query, Transaction } from "firebase-admin/firestore";
 import { chunks } from "@/shared/chunks";
+import { mapWithLimit } from "@/shared/concurrency";
 import {
   CatalogError,
   DEFAULT_PAGE_SIZE,
@@ -61,6 +62,11 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
       return snapshot.docs.map((doc) => cardSetSchema.parse(doc.data())).sort(newestFirst);
     },
 
+    async getCardSet(id) {
+      const doc = await cardSets.doc(id).get();
+      return doc.exists ? cardSetSchema.parse(doc.data()) : null;
+    },
+
     async saveProduct(product) {
       const valid = productSchema.parse(product);
       await db.runTransaction(async (transaction) => {
@@ -101,7 +107,7 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
           assertSkuIsFree(transaction, valid, validInternals),
         ]);
         if (!productDoc.exists) {
-          throw new CatalogError(`Produkt "${valid.productId}" existiert nicht`);
+          throw new CatalogError(`Product "${valid.productId}" does not exist`);
         }
         assertOfferFits(productSchema.parse(productDoc.data()), valid);
         writeOffer(transaction, valid, validInternals);
@@ -113,7 +119,7 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
       const validOffer = offerSchema.parse(offer);
       const validInternals = internals && offerInternalsSchema.parse(internals);
       if (validOffer.productId !== validProduct.id) {
-        throw new CatalogError("Das Angebot gehört zu einem anderen Produkt");
+        throw new CatalogError("The offer belongs to a different product");
       }
       assertOfferFits(validProduct, validOffer);
       await db.runTransaction(async (transaction) => {
@@ -148,7 +154,7 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
 
     async getOfferInternalsBySkus(skus) {
       const uniqueSkus = [...new Set(skus)];
-      if (uniqueSkus.length > MAX_PAGE_SIZE) throw new CatalogError(`Höchstens ${MAX_PAGE_SIZE} Einträge auf einmal`);
+      if (uniqueSkus.length > MAX_PAGE_SIZE) throw new CatalogError(`At most ${MAX_PAGE_SIZE} entries at a time`);
       const snapshots = await Promise.all(
         chunks(uniqueSkus, MAX_IN_FILTER_VALUES).map((part) => offerInternals.where("sku", "in", part).limit(part.length).get()),
       );
@@ -157,6 +163,17 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
           .flatMap((snapshot) => snapshot.docs)
           .map((doc) => [String(doc.get("sku")), { offerId: doc.id, internals: offerInternalsSchema.parse(doc.data()) }]),
       );
+    },
+
+    async countProductsBySet(setIds) {
+      const uniqueIds = [...new Set(setIds)];
+      if (uniqueIds.length > MAX_PAGE_SIZE) throw new CatalogError(`At most ${MAX_PAGE_SIZE} entries at a time`);
+      // A count query reads one index entry per product, so this stays cheap even for many sets.
+      const counts = await mapWithLimit(uniqueIds, 10, async (id) => {
+        const snapshot = await products.where("setId", "==", id).count().get();
+        return [id, snapshot.data().count] as const;
+      });
+      return new Map(counts);
     },
 
     async getProductsByIds(ids) {
@@ -171,7 +188,7 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
           transaction.get(products.where("gameId", "==", id).limit(1)),
         ]);
         if (!sets.empty || !gameProducts.empty) {
-          throw new CatalogError("Das Spiel hat noch Sets oder Produkte – bitte zuerst diese löschen.");
+          throw new CatalogError("The TCG still has sets or products – delete those first.");
         }
         transaction.delete(games.doc(id));
       });
@@ -181,7 +198,7 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
       await db.runTransaction(async (transaction) => {
         const setProducts = await transaction.get(products.where("setId", "==", id).limit(1));
         if (!setProducts.empty) {
-          throw new CatalogError("Im Set sind noch Produkte – bitte zuerst diese löschen.");
+          throw new CatalogError("The set still has products – delete those first.");
         }
         transaction.delete(cardSets.doc(id));
       });
@@ -191,7 +208,7 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
       await db.runTransaction(async (transaction) => {
         const productOffers = await transaction.get(offers.where("productId", "==", id).limit(MAX_PAGE_SIZE + 1));
         if (productOffers.size > MAX_PAGE_SIZE) {
-          throw new CatalogError(`Mehr als ${MAX_PAGE_SIZE} Angebote – bitte zuerst einige Angebote löschen.`);
+          throw new CatalogError(`More than ${MAX_PAGE_SIZE} offers – delete some of them first.`);
         }
         productOffers.docs.forEach((offer) => {
           transaction.delete(offer.ref);
@@ -227,7 +244,7 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
   async function assertSlugIsFree(transaction: Transaction, product: Product) {
     const sameSlug = await transaction.get(products.where("slug", "==", product.slug).limit(2));
     if (sameSlug.docs.some((doc) => doc.id !== product.id)) {
-      throw new CatalogError(`Es gibt schon ein Produkt unter /produkte/${product.slug}`);
+      throw new CatalogError(`A product already exists at /produkte/${product.slug}`);
     }
   }
 
@@ -235,7 +252,7 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
     if (!internals?.sku) return;
     const sameSku = await transaction.get(offerInternals.where("sku", "==", internals.sku).limit(2));
     if (sameSku.docs.some((doc) => doc.id !== offer.id)) {
-      throw new CatalogError(`Die SKU ${internals.sku} ist schon an ein anderes Angebot vergeben`);
+      throw new CatalogError(`The SKU ${internals.sku} is already used by another offer`);
     }
   }
 
@@ -249,7 +266,7 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
   async function getAllByIds(collection: CollectionReference, ids: readonly string[]): Promise<DocumentSnapshot[]> {
     const uniqueIds = [...new Set(ids)];
     if (uniqueIds.length === 0) return [];
-    if (uniqueIds.length > MAX_PAGE_SIZE) throw new CatalogError(`Höchstens ${MAX_PAGE_SIZE} Einträge auf einmal`);
+    if (uniqueIds.length > MAX_PAGE_SIZE) throw new CatalogError(`At most ${MAX_PAGE_SIZE} entries at a time`);
     const snapshots = await db.getAll(...uniqueIds.map((id) => collection.doc(id)));
     return snapshots.filter((snapshot) => snapshot.exists);
   }
@@ -257,7 +274,7 @@ export function createFirestoreCatalogRepository(db: Firestore): CatalogReposito
 
 function assertOfferFits(product: Product, offer: Offer) {
   if (!isOfferTypeAllowedFor(product.kind, offer.type)) {
-    throw new CatalogError(`Angebotsart "${offer.type}" passt nicht zu Produktart "${product.kind}"`);
+    throw new CatalogError(`Offer type "${offer.type}" does not fit product type "${product.kind}"`);
   }
 }
 

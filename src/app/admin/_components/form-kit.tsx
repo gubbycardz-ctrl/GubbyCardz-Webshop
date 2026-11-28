@@ -46,7 +46,7 @@ export function SubmitButton({ pending, children }: { pending: boolean; children
       disabled={pending}
       className="rounded-lg bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
     >
-      {pending ? "Speichert …" : children}
+      {pending ? "Saving …" : children}
     </button>
   );
 }

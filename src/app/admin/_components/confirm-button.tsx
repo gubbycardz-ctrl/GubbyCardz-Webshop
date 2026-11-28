@@ -36,7 +36,7 @@ export function ConfirmButton({
         disabled={pending}
         className={`rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50 ${style}`}
       >
-        {pending ? "Wird gespeichert …" : label}
+        {pending ? "Saving …" : label}
       </button>
       {error && (
         <span role="alert" className="max-w-xs text-xs text-brand-red">

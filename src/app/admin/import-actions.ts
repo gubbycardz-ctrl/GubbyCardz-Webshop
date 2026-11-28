@@ -9,9 +9,9 @@ import { CATALOG_CACHE_TAG, previewCatalogImport, runCatalogImport, type ImportO
 export async function importProducts(formData: FormData): Promise<ImportOutcome> {
   await requireAdmin();
   const file = formData.get("file");
-  if (!(file instanceof Blob) || file.size === 0) return { ok: false, error: "Bitte eine Excel-Datei (.xlsx) auswählen." };
+  if (!(file instanceof Blob) || file.size === 0) return { ok: false, error: "Please choose an Excel file (.xlsx)." };
   if (file.size > MAX_IMPORT_FILE_BYTES) {
-    return { ok: false, error: `Die Datei ist zu groß (höchstens ${MAX_IMPORT_FILE_BYTES / 1024} KB).` };
+    return { ok: false, error: `The file is too large (at most ${MAX_IMPORT_FILE_BYTES / 1024} KB).` };
   }
   const options = { overwriteStock: formData.get("overwriteStock") === "on", hideNewProducts: formData.get("hideNewProducts") === "on" };
   if (formData.get("intent") !== "import") return previewCatalogImport(file, options);

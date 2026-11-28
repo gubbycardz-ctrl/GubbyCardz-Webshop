@@ -7,7 +7,7 @@ import { OrderError } from "@/modules/orders";
 import { getOrderRepository } from "@/modules/orders/server";
 import type { FormState } from "./catalog-actions";
 
-const UNCHANGED = "Die Bestellung hat inzwischen einen anderen Status – bitte Seite prüfen.";
+const UNCHANGED = "The order has a different status now – please check the page.";
 
 export async function markOrderPaid(orderId: unknown): Promise<FormState> {
   await requireAdmin();
@@ -28,7 +28,7 @@ export async function cancelOrder(orderId: unknown): Promise<FormState> {
 }
 
 async function changeStatus(orderId: unknown, change: (id: string, now: Date) => Promise<string>): Promise<FormState> {
-  if (!isId(orderId)) return { error: "Bestellung nicht gefunden." };
+  if (!isId(orderId)) return { error: "Order not found." };
   try {
     if ((await change(orderId, new Date())) === "unchanged") return { error: UNCHANGED };
   } catch (error) {
@@ -36,7 +36,7 @@ async function changeStatus(orderId: unknown, change: (id: string, now: Date) =>
     throw error;
   }
   refresh();
-  return { success: "Gespeichert." };
+  return { success: "Saved." };
 }
 
 // Bound arguments arrive from the browser like any other input, so check them too.

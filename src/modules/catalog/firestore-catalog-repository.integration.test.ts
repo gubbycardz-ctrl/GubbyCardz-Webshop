@@ -296,6 +296,14 @@ describe("product with its first offer", () => {
   });
 });
 
+describe("reading a single set", () => {
+  it("finds a set by id and returns null for an unknown one", async () => {
+    await repository.saveCardSet({ id: "pokemon-pre", gameId: "pokemon", name: "Prismatic Evolutions", code: "PRE", era: "Scarlet & Violet", preReleaseDate: "2025-01-10" });
+    expect(await repository.getCardSet("pokemon-pre")).toMatchObject({ code: "PRE", era: "Scarlet & Violet", preReleaseDate: "2025-01-10" });
+    expect(await repository.getCardSet("nope")).toBeNull();
+  });
+});
+
 describe("hidden products", () => {
   const draft: Product = { ...display, id: "p-draft", name: "Entwurf Display", slug: "entwurf-display", gameId: "pokemon", hidden: true, createdAt: "2026-02-01T00:00:00.000Z" };
   const draftOffer: Offer = { id: "o-draft", productId: draft.id, type: "sealed", language: "de", priceCents: 9999, stock: 4 };

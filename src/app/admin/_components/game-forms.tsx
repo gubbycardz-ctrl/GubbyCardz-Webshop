@@ -1,17 +1,17 @@
 "use client";
 
 import type { Game } from "@/modules/catalog";
-import { createCardSet, createGame } from "../catalog-actions";
+import { createCardSet, createGame, updateGame } from "../catalog-actions";
 import { Field, FormMessage, SubmitButton, inputClass, useAdminForm } from "./form-kit";
 
 export function GameForm() {
   const { state, pending, onSubmit } = useAdminForm(createGame);
   return (
     <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-3">
-      <Field label="Name des Spiels">
-        <input name="name" required placeholder="z. B. Pokémon" className={inputClass} />
+      <Field label="TCG name">
+        <input name="name" required placeholder="e.g. Pokémon" className={inputClass} />
       </Field>
-      <SubmitButton pending={pending}>Spiel anlegen</SubmitButton>
+      <SubmitButton pending={pending}>Add TCG</SubmitButton>
       <FormMessage state={state} />
     </form>
   );
@@ -21,7 +21,7 @@ export function CardSetForm({ games }: { games: Game[] }) {
   const { state, pending, onSubmit } = useAdminForm(createCardSet);
   return (
     <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-2">
-      <Field label="Spiel">
+      <Field label="TCG">
         <select name="gameId" required className={inputClass}>
           {games.map((game) => (
             <option key={game.id} value={game.id}>
@@ -30,19 +30,33 @@ export function CardSetForm({ games }: { games: Game[] }) {
           ))}
         </select>
       </Field>
-      <Field label="Name des Sets">
-        <input name="name" required placeholder="z. B. Karmesin & Purpur – 151" className={inputClass} />
+      <Field label="Set name">
+        <input name="name" required placeholder="e.g. Scarlet & Violet—151" className={inputClass} />
       </Field>
-      <Field label="Set-Code">
-        <input name="code" required placeholder="z. B. MEW oder OP-05" className={inputClass} />
+      <Field label="Set code">
+        <input name="code" required placeholder="e.g. MEW or OP-05" className={inputClass} />
       </Field>
-      <Field label="Erscheinungsdatum (optional)">
+      <Field label="Release date (optional)">
         <input name="releaseDate" type="date" className={inputClass} />
       </Field>
       <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
-        <SubmitButton pending={pending}>Set anlegen</SubmitButton>
+        <SubmitButton pending={pending}>Add set</SubmitButton>
         <FormMessage state={state} />
       </div>
+    </form>
+  );
+}
+
+/** Renames a TCG in place – its address in the shop (/spiele/…) stays the same. */
+export function GameRenameForm({ game }: { game: Game }) {
+  const { state, pending, onSubmit } = useAdminForm(updateGame.bind(null, game.id), { resetOnSuccess: false });
+  return (
+    <form onSubmit={onSubmit} className="mt-2 flex flex-wrap items-end gap-2">
+      <Field label="Name">
+        <input name="name" required defaultValue={game.name} className={inputClass} />
+      </Field>
+      <SubmitButton pending={pending}>Rename</SubmitButton>
+      <FormMessage state={state} />
     </form>
   );
 }

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getGame, getProductsOfGame } from "@/modules/catalog/server";
-import { ProductGrid } from "@/app/product-grid";
+import { ProductGrid } from "@/app/(shop)/product-grid";
 
 export async function generateMetadata({ params }: PageProps<"/spiele/[gameId]">): Promise<Metadata> {
   const { gameId } = await params;

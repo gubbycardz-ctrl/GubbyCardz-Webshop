@@ -13,6 +13,7 @@ export interface CatalogRepository {
 
   saveCardSet(cardSet: CardSet): Promise<void>;
   listCardSets(gameId: string): Promise<CardSet[]>;
+  getCardSet(id: string): Promise<CardSet | null>;
 
   /** Fails if another product already uses the slug. */
   saveProduct(product: Product): Promise<void>;
@@ -46,6 +47,9 @@ export interface CatalogRepository {
   getOfferInternals(offerIds: readonly string[]): Promise<Map<string, OfferInternals>>;
   /** Admin only, like getOfferInternals. Keyed by SKU; unknown SKUs are left out. At most MAX_PAGE_SIZE SKUs per call. */
   getOfferInternalsBySkus(skus: readonly string[]): Promise<Map<string, { offerId: string; internals: OfferInternals }>>;
+  /** Products per set, hidden ones included (admin only). Sets without products count 0. At most MAX_PAGE_SIZE ids per call. */
+  countProductsBySet(setIds: readonly string[]): Promise<Map<string, number>>;
+
   /** Missing ids are left out. At most MAX_PAGE_SIZE ids per call. */
   getProductsByIds(ids: readonly string[]): Promise<Product[]>;
 

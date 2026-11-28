@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { GameLinks } from "@/app/game-links";
+import { GameLinks } from "@/app/(shop)/game-links";
 
 export const metadata: Metadata = {
   title: "Spiele",

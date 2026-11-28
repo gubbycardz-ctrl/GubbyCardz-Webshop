@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
 
 test("admin pages require a login", async ({ page }) => {
-  for (const path of ["/admin", "/admin/produkte", "/admin/import"]) {
+  for (const path of ["/admin", "/admin/produkte", "/admin/import", "/admin/tcg-katalog"]) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/admin\/login$/);
-    await expect(page.getByRole("heading", { name: "Admin-Anmeldung" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Admin sign-in" })).toBeVisible();
   }
 });

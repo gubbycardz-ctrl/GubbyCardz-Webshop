@@ -5,6 +5,7 @@ export { createFirestoreCatalogRepository } from "./firestore-catalog-repository
 export { getCatalogRepository } from "./default-repository";
 export { previewCatalogImport, runCatalogImport, type ImportOutcome } from "./catalog-import";
 export { getSellableOffers } from "./shop-offers";
+export { SET_SYNC_SOURCES, SET_SYNC_SOURCE_IDS, previewSetSync, runSetSync, type SetSyncOutcome, type SetSyncRow, type SetSyncSourceId } from "./set-sync-run";
 export { prepareStockChange, type StockItem, type StockShortage } from "./firestore-stock";
 export {
   CATALOG_CACHE_TAG,
